@@ -44,13 +44,14 @@ body {
 }
 
 .table-area {
-    min-height: 100px;
+    min-height: 160px;
     border: 2px dashed rgba(255,255,255,0.3);
     border-radius: 10px;
     margin-bottom: 20px;
     display: flex;
     justify-content: center;
     align-items: center;
+    gap: 20px;
 }
 
 .controls {
@@ -59,15 +60,12 @@ body {
     gap: 10px;
 }
 
-.input-prompt {
-    font-weight: bold;
-    margin-bottom: 10px;
-}
-
 .buttons {
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
 }
 
 button {
@@ -84,17 +82,110 @@ button:hover {
     background: #eee;
 }
 
-button.card-btn {
-    background: #f0f0f0;
-    border: 1px solid #999;
-}
-
 button.truco-btn {
     background: #ff9800;
     color: white;
+    font-weight: bold;
 }
 
 button.fold-btn {
     background: #f44336;
     color: white;
+}
+
+/* Card Styles */
+.card {
+    width: 100px;
+    height: 140px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+    position: relative;
+    padding: 5px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    font-family: 'Times New Roman', serif;
+    user-select: none;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    flex-shrink: 0; /* Prevent squishing */
+}
+
+.card:hover {
+    transform: translateY(-10px);
+    box-shadow: 4px 4px 15px rgba(0,0,0,0.5);
+    z-index: 10;
+}
+
+.card-red {
+    color: #d32f2f;
+}
+
+.card-black {
+    color: #212121;
+}
+
+.card-corner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 0.9;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.card-corner.top-left {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+}
+
+.card-corner.bottom-right {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    transform: rotate(180deg);
+}
+
+.card-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 50px;
+    line-height: 1;
+}
+
+/* Small Card Variant */
+.card.card-small {
+    width: 60px;
+    height: 84px;
+    border-radius: 5px;
+}
+
+.card.card-small .card-corner {
+    font-size: 12px;
+}
+
+.card.card-small .card-center {
+    font-size: 28px;
+}
+
+/* Card Back */
+.card-back {
+    background: repeating-linear-gradient(
+        45deg,
+        #1565c0,
+        #1565c0 10px,
+        #0d47a1 10px,
+        #0d47a1 20px
+    );
+    border: 2px solid white;
+}
+
+.card-disabled {
+    filter: grayscale(0.5);
+    cursor: not-allowed;
 }
