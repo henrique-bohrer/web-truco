@@ -17,6 +17,7 @@ function App() {
     const [score, setScore] = useState<number[]>([0, 0]);
     const [vira, setVira] = useState<Rank | null>(null);
     const [trucoVal, setTrucoVal] = useState<number>(1);
+    const [maoIndex, setMaoIndex] = useState<number>(0);
     const [updateTrigger, setUpdateTrigger] = useState(0);
 
     const resolveInputRef = useRef<((answer: string) => void) | null>(null);
@@ -30,6 +31,7 @@ function App() {
             setScore([...gameRef.current.getScore()]);
             setVira(gameRef.current.getVira());
             setTrucoVal(gameRef.current.getTrucoValue());
+            setMaoIndex(gameRef.current.getMaoPlayerIndex());
             setUpdateTrigger(x => x + 1);
         }
     };
@@ -131,6 +133,14 @@ function App() {
                                 </span>
                             </div>
                         ))}
+                    </div>
+
+                    {/* Mao Indicator */}
+                    <div style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', textAlign: 'right', color: 'white', background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '5px' }}>
+                        <div style={{ fontSize: '12px', textTransform: 'uppercase', marginBottom: '5px' }}>Começa (Mão)</div>
+                        <div style={{ fontSize: '16px', fontWeight: 'bold' }}>
+                            {players[maoIndex]?.name || '...'}
+                        </div>
                     </div>
                 </div>
 
