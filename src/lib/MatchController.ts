@@ -38,6 +38,11 @@ export class MatchController {
     public getRoundScore() { return this.roundScore; }
     public getVira() { return this.vira; }
     public getTrucoValue() { return this.trucoValue; }
+    public getMaoPlayerIndex() { return this.currentTurnIndex; }
+
+    private sleep(ms: number) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
 
     async startMatch() {
         this.logger.log("Starting Match!");
@@ -153,6 +158,7 @@ export class MatchController {
                 const card = player.playCard(moveIndex)!;
                 this.logger.log(`${player.name} played ${card.toString()}`);
                 this.currentRoundCards.push({ playerIndex: currentIndex, card });
+                await this.sleep(1000);
             } else {
                 // Human move
                 this.logger.log(`Your hand: ${player.hand.map((c, i) => `[${i}] ${c.toString()}`).join(' ')}`);
@@ -210,7 +216,14 @@ export class MatchController {
             }
         }
 
-        if (isDraw) return { winnerIndex: -1, type: 'draw' };
-        return { winnerIndex: this.currentRoundCards[bestCardIdx].playerIndex, type: 'normal' };
+        if (isDraw) {
+            this.logger.log("Round finished (Draw).");
+            await this.sleep(2000);
+            return { winnerIndex: -1, type: 'draw' };
+        }
+        const winner = this.currentRoundCards[bestCardIdx].playerIndex;
+        this.logger.log(`Round finished. Winner: ${this.players[winner].name}`);
+        await this.sleep(2000);
+        return { winnerIndex: winner, type: 'normal' };
     }
 }
