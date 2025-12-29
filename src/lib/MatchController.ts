@@ -72,7 +72,16 @@ export class MatchController {
 
         while (this.roundScore[0] < 2 && this.roundScore[1] < 2) {
             console.log(`\nRound ${roundNumber}`);
-            const winnerIndex = await this.playRound(lastWinnerIndex);
+            const roundResult = await this.playRound(lastWinnerIndex);
+
+            if (roundResult.type === 'fold') {
+                const winningTeam = roundResult.winnerIndex % 2;
+                this.roundScore[winningTeam] = 2; // Force win condition
+                console.log(`Player ${this.players[roundResult.winnerIndex ^ 1].name} folded! Winner is ${this.players[roundResult.winnerIndex].name}`);
+                break;
+            }
+
+            const winnerIndex = roundResult.winnerIndex;
 
             if (winnerIndex === -1) {
                 // Draw in round
@@ -147,7 +156,7 @@ export class MatchController {
         this.currentTurnIndex = (this.currentTurnIndex + 1) % this.players.length;
     }
 
-    private async playRound(startIndex: number): Promise<number> {
+    private async playRound(startIndex: number): Promise<{ winnerIndex: number, type: 'normal' | 'fold' | 'draw' }> {
         const playedCards: { playerIndex: number, card: ICard }[] = [];
         let currentIndex = startIndex;
 
@@ -183,9 +192,15 @@ export class MatchController {
                 // Show hand
                 console.log(`Your hand: ${player.hand.map((c, i) => `[${i}] ${c.toString()}`).join(' ')}`);
                 // Ask for input
-                const index = await this.askQuestion(`Choose card index (0-${player.hand.length-1}) or 't' for Truco: `);
+                const index = await this.askQuestion(`Choose card index (0-${player.hand.length-1}), 't' for Truco, or 'd' to Fold (Desistir): `);
 
-                if (index.toLowerCase() === 't') {
+                if (index.toLowerCase() === 'd') {
+                    // Fold logic
+                    // Opponent wins
+                    // Assuming 2 players for now, next player is opponent
+                    const opponentIndex = (currentIndex + 1) % this.players.length;
+                    return { winnerIndex: opponentIndex, type: 'fold' };
+                } else if (index.toLowerCase() === 't') {
                      if (this.trucoValue < 12) {
                          console.log("You yelled TRUCO!");
                          this.trucoValue = this.trucoValue === 1 ? 3 : this.trucoValue + 3;
@@ -238,8 +253,8 @@ export class MatchController {
             }
         }
 
-        if (isDraw) return -1;
-        return playedCards[bestCardIdx].playerIndex;
+        if (isDraw) return { winnerIndex: -1, type: 'draw' };
+        return { winnerIndex: playedCards[bestCardIdx].playerIndex, type: 'normal' };
     }
 
     private askQuestion(query: string): Promise<string> {
