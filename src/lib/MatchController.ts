@@ -17,18 +17,22 @@ export class MatchController {
     public currentRoundCards: { playerIndex: number, card: ICard }[] = [];
 
     // Dependencies
-    private inputHandler: IInputHandler;
+    private defaultInputHandler: IInputHandler; // Fallback
     private logger: ILogger;
+    private playerHandlers: Map<Player, IInputHandler> = new Map();
 
     constructor(inputHandler: IInputHandler, logger: ILogger) {
         this.deck = new Deck();
-        this.inputHandler = inputHandler;
+        this.defaultInputHandler = inputHandler;
         this.logger = logger;
     }
 
-    addPlayer(player: Player) {
+    addPlayer(player: Player, handler?: IInputHandler) {
         if (this.players.length < 4) {
             this.players.push(player);
+            if (handler) {
+                this.playerHandlers.set(player, handler);
+            }
         }
     }
 
@@ -56,7 +60,8 @@ export class MatchController {
         } else {
             this.logger.log("Team 2 Wins the Match!");
         }
-        this.inputHandler.close();
+        this.defaultInputHandler.close();
+        this.playerHandlers.forEach(h => h.close());
     }
 
     private async playHand() {
@@ -167,8 +172,9 @@ export class MatchController {
                 await this.sleep(1000);
             } else {
                 // Human move
+                const handler = this.playerHandlers.get(player) || this.defaultInputHandler;
                 this.logger.log(`Your hand: ${player.hand.map((c, i) => `[${i}] ${c.toString()}`).join(' ')}`);
-                const index = await this.inputHandler.ask(`Choose card index (0-${player.hand.length-1}), 't' for Truco, or 'd' to Fold (Desistir): `);
+                const index = await handler.ask(`Choose card index (0-${player.hand.length-1}), 't' for Truco, or 'd' to Fold (Desistir): `);
 
                 if (index.toLowerCase() === 'd') {
                     const opponentIndex = (currentIndex + 1) % this.players.length;
@@ -193,7 +199,7 @@ export class MatchController {
                              return { winnerIndex: currentIndex, type: 'fold' };
                          }
 
-                         const cardIdx = await this.inputHandler.ask(`Choose card index (0-${player.hand.length-1}): `);
+                         const cardIdx = await handler.ask(`Choose card index (0-${player.hand.length-1}): `);
                          // Handle Fold during card selection? For now assume play.
                          const idx = parseInt(cardIdx);
                          const card = player.playCard(idx)!; // Assume valid
@@ -253,7 +259,13 @@ export class MatchController {
     // Helper to ask Human
     private async askHumanTruco(bot: Player): Promise<boolean> {
         this.logger.log(`${bot.name} yelled TRUCO!`);
-        const response = await this.inputHandler.ask("Bot yelled TRUCO! Do you (a)ccept or (d)esist/fold? ");
+        // Find opponent (Human)
+        // For now assume all non-bots are targets or just the next player?
+        // In 1v1, it's the other player.
+        const opponent = this.players.find(p => p !== bot && !(p instanceof Bot));
+        const handler = (opponent && this.playerHandlers.get(opponent)) || this.defaultInputHandler;
+
+        const response = await handler.ask("Bot yelled TRUCO! Do you (a)ccept or (d)esist/fold? ");
         return response.toLowerCase() === 'a' || response.toLowerCase() === 's' || response.toLowerCase() === 'y';
     }
 }
