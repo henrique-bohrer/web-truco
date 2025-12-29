@@ -189,3 +189,46 @@ button.fold-btn {
     filter: grayscale(0.5);
     cursor: not-allowed;
 }
+
+/* Animations */
+@keyframes slideInFromBottom {
+    0% { transform: translateY(200px) rotate(-10deg); opacity: 0; }
+    100% { transform: translateY(0) rotate(0); opacity: 1; }
+}
+
+@keyframes slideInFromTop {
+    0% { transform: translateY(-200px) rotate(10deg); opacity: 0; }
+    100% { transform: translateY(0) rotate(0); opacity: 1; }
+}
+
+@keyframes slideInFromLeft {
+    0% { transform: translateX(-200px); opacity: 0; }
+    100% { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideInFromRight {
+    0% { transform: translateX(200px); opacity: 0; }
+    100% { transform: translateX(0); opacity: 1; }
+}
+
+.played-card {
+    animation-duration: 0.5s;
+    animation-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Bounce */
+    animation-fill-mode: both;
+}
+
+.played-card.anim-bottom {
+    animation-name: slideInFromBottom;
+}
+
+.played-card.anim-top {
+    animation-name: slideInFromTop;
+}
+
+.played-card.anim-left {
+    animation-name: slideInFromLeft;
+}
+
+.played-card.anim-right {
+    animation-name: slideInFromRight;
+}

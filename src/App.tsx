@@ -125,14 +125,24 @@ function App() {
                 <div className="table-area" style={{ position: 'relative', minHeight: '200px' }}>
                     {tableCards.length === 0 && <div style={{ color: 'white', opacity: 0.5 }}>Table Empty</div>}
                     <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
-                        {tableCards.map((item, i) => (
-                            <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                <Card card={item.card} />
-                                <span style={{ color: 'white', marginTop: '5px', fontSize: '12px' }}>
-                                    {players[item.playerIndex]?.name || `P${item.playerIndex}`}
-                                </span>
-                            </div>
-                        ))}
+                        {tableCards.map((item, i) => {
+                             let animClass = '';
+                             // Simple 1v1 mapping
+                             if (players[item.playerIndex]?.type === PlayerType.Human) {
+                                 animClass = 'anim-bottom';
+                             } else {
+                                 animClass = 'anim-top';
+                             }
+
+                             return (
+                                <div key={i} className={`played-card ${animClass}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                    <Card card={item.card} />
+                                    <span style={{ color: 'white', marginTop: '5px', fontSize: '12px' }}>
+                                        {players[item.playerIndex]?.name || `P${item.playerIndex}`}
+                                    </span>
+                                </div>
+                             );
+                        })}
                     </div>
 
                     {/* Mao Indicator */}
