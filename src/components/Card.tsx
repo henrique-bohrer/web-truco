@@ -2,84 +2,50 @@ import React from 'react';
 import { ICard, Suit } from '../lib/types';
 
 interface CardProps {
-    card?: ICard;
+    card?: ICard; // Optional for hidden cards or partials
     hidden?: boolean;
     onClick?: () => void;
-    size?: 'small' | 'medium' | 'large';
     disabled?: boolean;
+    size?: 'small' | 'normal';
+    className?: string;
 }
 
-const Card: React.FC<CardProps> = ({ card, hidden, onClick, size = 'medium', disabled }) => {
-    // Basic styling
-    const getDimensions = () => {
-        switch (size) {
-            case 'small': return { width: 60, height: 90, fontSize: 14 };
-            case 'large': return { width: 120, height: 180, fontSize: 24 };
-            default: return { width: 90, height: 135, fontSize: 18 };
-        }
-    };
-    const { width, height, fontSize } = getDimensions();
-
-    const styles: React.CSSProperties = {
-        width: `${width}px`,
-        height: `${height}px`,
-        backgroundColor: hidden ? '#3a3a3a' : 'white',
-        borderRadius: '8px',
-        border: '1px solid #ccc',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        padding: '5px',
-        boxShadow: '2px 2px 5px rgba(0,0,0,0.3)',
-        color: !hidden && (card?.suit === Suit.Diamonds || card?.suit === Suit.Hearts) ? 'red' : 'black',
-        cursor: onClick && !disabled ? 'pointer' : 'default',
-        position: 'relative',
-        userSelect: 'none',
-        opacity: disabled ? 0.6 : 1,
-        transition: 'transform 0.2s'
-    };
-
-    // Hover effect if clickable
-    const handleMouseEnter = (e: React.MouseEvent) => {
-        if (onClick && !disabled) {
-            e.currentTarget.style.transform = 'translateY(-5px)';
-        }
-    };
-    const handleMouseLeave = (e: React.MouseEvent) => {
-        if (onClick && !disabled) {
-            e.currentTarget.style.transform = 'translateY(0)';
-        }
-    };
+const Card: React.FC<CardProps> = ({ card, hidden, onClick, disabled, size = 'normal', className = '' }) => {
+    const sizeClass = size === 'small' ? 'card-small' : '';
+    const disabledClass = disabled ? 'card-disabled' : '';
 
     if (hidden) {
         return (
-            <div style={styles}>
-                <div style={{
-                    width: '100%', height: '100%',
-                    background: 'repeating-linear-gradient(45deg, #606abc, #606abc 10px, #465298 10px, #465298 20px)',
-                    borderRadius: '6px'
-                }} />
-            </div>
+            <div
+                className={`card card-back ${sizeClass} ${className}`}
+                onClick={!disabled ? onClick : undefined}
+            />
         );
     }
 
     if (!card) return null;
 
+    // Determine color based on suit
+    const isRed = card.suit === Suit.Hearts || card.suit === Suit.Diamonds;
+    const colorClass = isRed ? 'card-red' : 'card-black';
+
     return (
         <div
-            style={styles}
+            className={`card ${colorClass} ${sizeClass} ${disabledClass} ${className}`}
             onClick={!disabled ? onClick : undefined}
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
         >
-            <div style={{ fontSize: `${fontSize}px`, fontWeight: 'bold', textAlign: 'left' }}>
-                {card.rank}{card.suit}
+            <div className="card-corner top-left">
+                <span>{card.rank}</span>
+                <span>{card.suit}</span>
             </div>
-            <div style={{ fontSize: `${fontSize * 2.5}px`, textAlign: 'center', marginTop: '-10px' }}>
+
+            <div className="card-center">
                 {card.suit}
             </div>
-            <div style={{ fontSize: `${fontSize}px`, fontWeight: 'bold', textAlign: 'right', transform: 'rotate(180deg)' }}>
-                {card.rank}{card.suit}
+
+            <div className="card-corner bottom-right">
+                <span>{card.rank}</span>
+                <span>{card.suit}</span>
             </div>
         </div>
     );

@@ -211,6 +211,6 @@ export class MatchController {
         }
 
         if (isDraw) return { winnerIndex: -1, type: 'draw' };
-        return { winnerIndex: playedCards[bestCardIdx].playerIndex, type: 'normal' };
+        return { winnerIndex: this.currentRoundCards[bestCardIdx].playerIndex, type: 'normal' };
     }
 }
