@@ -146,7 +146,7 @@ function App() {
                     </div>
 
                     {/* Mao Indicator */}
-                    <div style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', textAlign: 'right', color: 'white', background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '5px' }}>
+                    <div style={{ position: 'absolute', right: '-150px', top: '50%', transform: 'translateY(-50%)', textAlign: 'right', color: 'white', background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '5px', width: '120px' }}>
                         <div style={{ fontSize: '12px', textTransform: 'uppercase', marginBottom: '5px' }}>Começa (Mão)</div>
                         <div style={{ fontSize: '16px', fontWeight: 'bold' }}>
                             {players[maoIndex]?.name || '...'}

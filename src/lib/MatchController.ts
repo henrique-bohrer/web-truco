@@ -162,8 +162,8 @@ export class MatchController {
 
                 const moveIndex = player.decideMove(state);
                 const card = player.playCard(moveIndex)!;
-                this.logger.log(`${player.name} played ${card.toString()}`);
                 this.currentRoundCards.push({ playerIndex: currentIndex, card });
+                this.logger.log(`${player.name} played ${card.toString()}`);
                 await this.sleep(1000);
             } else {
                 // Human move
@@ -197,8 +197,8 @@ export class MatchController {
                          // Handle Fold during card selection? For now assume play.
                          const idx = parseInt(cardIdx);
                          const card = player.playCard(idx)!; // Assume valid
-                         this.logger.log(`${player.name} played ${card.toString()}`);
                          this.currentRoundCards.push({ playerIndex: currentIndex, card });
+                         this.logger.log(`${player.name} played ${card.toString()}`);
                      } else {
                          this.logger.log("Already max value!");
                          i--;
@@ -212,8 +212,8 @@ export class MatchController {
                         continue;
                     }
                     const card = player.playCard(idx)!;
-                    this.logger.log(`${player.name} played ${card.toString()}`);
                     this.currentRoundCards.push({ playerIndex: currentIndex, card });
+                    this.logger.log(`${player.name} played ${card.toString()}`);
                 }
             }
 
