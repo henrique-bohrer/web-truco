@@ -58,7 +58,7 @@ function App() {
             const human = new Player("Human", PlayerType.Human);
             const bot = new Bot("Bot");
 
-            game.addPlayer(human);
+            game.addPlayer(human, webIO);
             game.addPlayer(bot);
 
             gameRef.current = game;
