@@ -1,0 +1,26 @@
+{
+  "name": "app",
+  "version": "1.0.0",
+  "description": "📄 Documentação do Projeto: Truco Web (Regra Paulista) 1. Visão Geral do Projeto Desenvolvimento de um jogo de Truco online via web, focado na regra Paulista. O sistema deve priorizar a integridade das regras no backend e permitir partidas contra inteligência artificial (Bots).",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/henrique-bohrer/web-truco.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/henrique-bohrer/web-truco/issues"
+  },
+  "homepage": "https://github.com/henrique-bohrer/web-truco#readme",
+  "devDependencies": {
+    "@types/node": "^25.0.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}
