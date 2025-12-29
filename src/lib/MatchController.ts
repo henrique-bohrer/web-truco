@@ -147,10 +147,16 @@ export class MatchController {
                     handScores: this.roundScore
                 };
 
+                // Bot yells Truco?
                 if (this.trucoValue === 1 && player.shouldAcceptTruco(state)) {
                     if (Math.random() < 0.2) {
-                        this.logger.log(`${player.name} yells TRUCO!`);
+                        const accepted = await this.askHumanTruco(player);
+                        if (!accepted) {
+                            // Human folded to Truco -> Bot wins current value (1)
+                            return { winnerIndex: currentIndex, type: 'fold' };
+                        }
                         this.trucoValue = 3;
+                        this.logger.log("You accepted Truco. Value is now 3.");
                     }
                 }
 
@@ -170,10 +176,27 @@ export class MatchController {
                 } else if (index.toLowerCase() === 't') {
                      if (this.trucoValue < 12) {
                          this.logger.log("You yelled TRUCO!");
-                         this.trucoValue = this.trucoValue === 1 ? 3 : this.trucoValue + 3;
-                         this.logger.log("Bot accepts.");
+
+                         // Bot decides
+                         const bot = this.players.find(p => p instanceof Bot) as Bot;
+                         const state: GameStateView = {
+                            vira: this.vira!,
+                            roundCards: this.currentRoundCards,
+                            handScores: this.roundScore
+                         };
+
+                         if (bot.shouldAcceptTruco(state)) {
+                             this.trucoValue = this.trucoValue === 1 ? 3 : this.trucoValue + 3;
+                             this.logger.log(`Bot accepts! Value is now ${this.trucoValue}`);
+                         } else {
+                             this.logger.log("Bot folds!");
+                             return { winnerIndex: currentIndex, type: 'fold' };
+                         }
+
                          const cardIdx = await this.inputHandler.ask(`Choose card index (0-${player.hand.length-1}): `);
-                         const card = player.playCard(parseInt(cardIdx))!;
+                         // Handle Fold during card selection? For now assume play.
+                         const idx = parseInt(cardIdx);
+                         const card = player.playCard(idx)!; // Assume valid
                          this.logger.log(`${player.name} played ${card.toString()}`);
                          this.currentRoundCards.push({ playerIndex: currentIndex, card });
                      } else {
@@ -225,5 +248,12 @@ export class MatchController {
         this.logger.log(`Round finished. Winner: ${this.players[winner].name}`);
         await this.sleep(2000);
         return { winnerIndex: winner, type: 'normal' };
+    }
+
+    // Helper to ask Human
+    private async askHumanTruco(bot: Player): Promise<boolean> {
+        this.logger.log(`${bot.name} yelled TRUCO!`);
+        const response = await this.inputHandler.ask("Bot yelled TRUCO! Do you (a)ccept or (d)esist/fold? ");
+        return response.toLowerCase() === 'a' || response.toLowerCase() === 's' || response.toLowerCase() === 'y';
     }
 }

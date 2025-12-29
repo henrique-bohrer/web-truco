@@ -189,6 +189,18 @@ function App() {
                                 Desistir (Fold)
                             </button>
                         )}
+
+                        {/* Truco Response Buttons */}
+                        {prompt?.includes("Bot yelled TRUCO") && (
+                            <>
+                                <button className="truco-btn" onClick={() => handleInput('a')}>
+                                    ACEITAR
+                                </button>
+                                <button className="fold-btn" onClick={() => handleInput('d')}>
+                                    CORRER (FOLD)
+                                </button>
+                            </>
+                        )}
                     </div>
                 )}
             </div>
