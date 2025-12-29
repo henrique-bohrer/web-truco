@@ -13,6 +13,9 @@ export class MatchController {
     private currentTurnIndex: number = 0;
     private trucoValue: number = 1;
 
+    // Public state for UI
+    public currentRoundCards: { playerIndex: number, card: ICard }[] = [];
+
     // Dependencies
     private inputHandler: IInputHandler;
     private logger: ILogger;
@@ -124,7 +127,7 @@ export class MatchController {
     }
 
     private async playRound(startIndex: number): Promise<{ winnerIndex: number, type: 'normal' | 'fold' | 'draw' }> {
-        const playedCards: { playerIndex: number, card: ICard }[] = [];
+        this.currentRoundCards = []; // Clear table at start of round
         let currentIndex = startIndex;
 
         for (let i = 0; i < this.players.length; i++) {
@@ -135,7 +138,7 @@ export class MatchController {
                 // Bot move
                 const state: GameStateView = {
                     vira: this.vira!,
-                    roundCards: playedCards,
+                    roundCards: this.currentRoundCards,
                     handScores: this.roundScore
                 };
 
@@ -149,7 +152,7 @@ export class MatchController {
                 const moveIndex = player.decideMove(state);
                 const card = player.playCard(moveIndex)!;
                 this.logger.log(`${player.name} played ${card.toString()}`);
-                playedCards.push({ playerIndex: currentIndex, card });
+                this.currentRoundCards.push({ playerIndex: currentIndex, card });
             } else {
                 // Human move
                 this.logger.log(`Your hand: ${player.hand.map((c, i) => `[${i}] ${c.toString()}`).join(' ')}`);
@@ -166,7 +169,7 @@ export class MatchController {
                          const cardIdx = await this.inputHandler.ask(`Choose card index (0-${player.hand.length-1}): `);
                          const card = player.playCard(parseInt(cardIdx))!;
                          this.logger.log(`${player.name} played ${card.toString()}`);
-                         playedCards.push({ playerIndex: currentIndex, card });
+                         this.currentRoundCards.push({ playerIndex: currentIndex, card });
                      } else {
                          this.logger.log("Already max value!");
                          i--;
@@ -181,7 +184,7 @@ export class MatchController {
                     }
                     const card = player.playCard(idx)!;
                     this.logger.log(`${player.name} played ${card.toString()}`);
-                    playedCards.push({ playerIndex: currentIndex, card });
+                    this.currentRoundCards.push({ playerIndex: currentIndex, card });
                 }
             }
 
@@ -192,9 +195,9 @@ export class MatchController {
         let bestCardIdx = 0;
         let isDraw = false;
 
-        for (let i = 1; i < playedCards.length; i++) {
-            const current = playedCards[i];
-            const best = playedCards[bestCardIdx];
+        for (let i = 1; i < this.currentRoundCards.length; i++) {
+            const current = this.currentRoundCards[i];
+            const best = this.currentRoundCards[bestCardIdx];
 
             const currentPower = current.card.getPower(this.vira!);
             const bestPower = best.card.getPower(this.vira!);
