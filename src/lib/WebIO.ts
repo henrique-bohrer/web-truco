@@ -4,6 +4,7 @@ export class WebIO implements IInputHandler, ILogger {
     private onLog: (msg: string) => void;
     private onAsk: (question: string, resolve: (answer: string) => void) => void;
     private onUpdate: () => void;
+    private pendingResolve: ((answer: string) => void) | null = null;
 
     constructor(
         onLog: (msg: string) => void,
@@ -23,12 +24,23 @@ export class WebIO implements IInputHandler, ILogger {
     ask(question: string): Promise<string> {
         this.onUpdate();
         return new Promise(resolve => {
-            this.onAsk(question, resolve);
+            this.pendingResolve = resolve;
+            this.onAsk(question, (answer) => {
+                this.pendingResolve = null;
+                resolve(answer);
+            });
         });
     }
 
     close(): void {
         this.onLog("Game Over");
         this.onUpdate();
+    }
+
+    abort(): void {
+        if (this.pendingResolve) {
+            this.pendingResolve("abort");
+            this.pendingResolve = null;
+        }
     }
 }

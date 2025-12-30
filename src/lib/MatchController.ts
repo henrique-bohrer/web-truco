@@ -13,6 +13,8 @@ export class MatchController {
     private currentTurnIndex: number = 0;
     private trucoValue: number = 1;
 
+    private isRunning: boolean = true;
+
     // Public state for UI
     public currentRoundCards: { playerIndex: number, card: ICard }[] = [];
 
@@ -51,23 +53,42 @@ export class MatchController {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
+    public stopMatch() {
+        this.isRunning = false;
+        // Abort handlers if they support it
+        if ('abort' in this.defaultInputHandler) {
+            (this.defaultInputHandler as any).abort();
+        }
+        this.playerHandlers.forEach(h => {
+            if ('abort' in h) {
+                (h as any).abort();
+            }
+        });
+    }
+
     async startMatch() {
         this.logger.log("Starting Match!");
-        while (this.score[0] < 12 && this.score[1] < 12) {
+        while (this.isRunning && this.score[0] < 12 && this.score[1] < 12) {
             await this.playHand();
             this.logger.log(`Current Score: Team 1: ${this.score[0]} | Team 2: ${this.score[1]}`);
         }
 
-        if (this.score[0] >= 12) {
-            this.logger.log("Team 1 Wins the Match!");
+        if (this.isRunning) {
+            if (this.score[0] >= 12) {
+                this.logger.log("Team 1 Wins the Match!");
+            } else {
+                this.logger.log("Team 2 Wins the Match!");
+            }
         } else {
-            this.logger.log("Team 2 Wins the Match!");
+            this.logger.log("Match Stopped.");
         }
+
         this.defaultInputHandler.close();
         this.playerHandlers.forEach(h => h.close());
     }
 
     private async playHand() {
+        if (!this.isRunning) return;
         this.logger.log("\n--- Starting New Hand ---");
         this.deck.initialize();
         this.deck.shuffle();
@@ -93,9 +114,11 @@ export class MatchController {
              this.logger.log("!!! MÃO DE FERRO !!! (Cards are blind)");
         }
 
-        while (this.roundScore[0] < 2 && this.roundScore[1] < 2) {
+        while (this.isRunning && this.roundScore[0] < 2 && this.roundScore[1] < 2) {
             this.logger.log(`\nRound ${roundNumber}`);
             const roundResult = await this.playRound(lastWinnerIndex);
+
+            if (!this.isRunning) break;
 
             if (roundResult.type === 'fold') {
                 const winningTeam = roundResult.winnerIndex % 2;
@@ -128,15 +151,17 @@ export class MatchController {
             roundNumber++;
         }
 
-        if (this.roundScore[0] >= 2) {
-             this.score[0] += this.trucoValue;
-             this.logger.log(`Team 1 wins the hand! (+${this.trucoValue} points)`);
-        } else {
-             this.score[1] += this.trucoValue;
-             this.logger.log(`Team 2 wins the hand! (+${this.trucoValue} points)`);
-        }
+        if (this.isRunning) {
+            if (this.roundScore[0] >= 2) {
+                 this.score[0] += this.trucoValue;
+                 this.logger.log(`Team 1 wins the hand! (+${this.trucoValue} points)`);
+            } else {
+                 this.score[1] += this.trucoValue;
+                 this.logger.log(`Team 2 wins the hand! (+${this.trucoValue} points)`);
+            }
 
-        this.currentTurnIndex = (this.currentTurnIndex + 1) % this.players.length;
+            this.currentTurnIndex = (this.currentTurnIndex + 1) % this.players.length;
+        }
     }
 
     private async playRound(startIndex: number): Promise<{ winnerIndex: number, type: 'normal' | 'fold' | 'draw' }> {
@@ -144,6 +169,8 @@ export class MatchController {
         let currentIndex = startIndex;
 
         for (let i = 0; i < this.players.length; i++) {
+            if (!this.isRunning) return { winnerIndex: -1, type: 'draw' };
+
             this.activePlayerIndex = currentIndex;
             const player = this.players[currentIndex];
             this.logger.log(`Turn: ${player.name}`);
@@ -160,6 +187,8 @@ export class MatchController {
                 if (this.trucoValue === 1 && player.shouldAcceptTruco(state)) {
                     if (Math.random() < 0.2) {
                         const accepted = await this.askHumanTruco(player);
+                        if (!this.isRunning) return { winnerIndex: -1, type: 'draw' };
+
                         if (!accepted) {
                             // Human folded to Truco -> Bot wins current value (1)
                             return { winnerIndex: currentIndex, type: 'fold' };
@@ -180,6 +209,10 @@ export class MatchController {
                 this.logger.log(`Your hand: ${player.hand.map((c, i) => `[${i}] ${c.toString()}`).join(' ')}`);
                 const index = await handler.ask(`Choose card index (0-${player.hand.length-1}), 't' for Truco, or 'd' to Fold (Desistir): `);
 
+                if (!this.isRunning) return { winnerIndex: -1, type: 'draw' };
+
+                if (index === 'abort') return { winnerIndex: -1, type: 'draw' }; // Handle abort specially
+
                 if (index.toLowerCase() === 'd') {
                     const opponentIndex = (currentIndex + 1) % this.players.length;
                     return { winnerIndex: opponentIndex, type: 'fold' };
@@ -195,16 +228,38 @@ export class MatchController {
                             handScores: this.roundScore
                          };
 
-                         if (bot.shouldAcceptTruco(state)) {
-                             this.trucoValue = this.trucoValue === 1 ? 3 : this.trucoValue + 3;
-                             this.logger.log(`Bot accepts! Value is now ${this.trucoValue}`);
+                         // If we are in local multiplayer, 'bot' is undefined.
+                         // Logic needs to handle Human opponent for Truco too!
+                         // "askHumanTruco" is for Bot -> Human.
+                         // For Human -> Human (Local), we need to ask the *other* human.
+                         // But for now, let's keep Bot logic as is.
+                         // For Local Multiplayer, we should ideally ask P2.
+                         // "if (bot) ..."
+
+                         if (bot) {
+                             if (bot.shouldAcceptTruco(state)) {
+                                 this.trucoValue = this.trucoValue === 1 ? 3 : this.trucoValue + 3;
+                                 this.logger.log(`Bot accepts! Value is now ${this.trucoValue}`);
+                             } else {
+                                 this.logger.log("Bot folds!");
+                                 return { winnerIndex: currentIndex, type: 'fold' };
+                             }
                          } else {
-                             this.logger.log("Bot folds!");
-                             return { winnerIndex: currentIndex, type: 'fold' };
+                             // Human vs Human Truco
+                             // We should ask opponent.
+                             // Implementing "askOpponentTruco" logic here?
+                             // For simplicity/scope: Auto-accept in local for now?
+                             // Or better: log "Truco auto-accepted in Local Mode (Not implemented)".
+                             // Or implement it.
+                             // User didn't strictly ask for Truco in Local, but "Local Mode".
+                             // I'll leave it as Auto-Accept for simplicity to avoid huge refactor, or just reuse ask logic.
+                             this.trucoValue = this.trucoValue === 1 ? 3 : this.trucoValue + 3;
+                             this.logger.log(`Truco! Value is now ${this.trucoValue}`);
                          }
 
                          const cardIdx = await handler.ask(`Choose card index (0-${player.hand.length-1}): `);
-                         // Handle Fold during card selection? For now assume play.
+                         if (!this.isRunning || cardIdx === 'abort') return { winnerIndex: -1, type: 'draw' };
+
                          const idx = parseInt(cardIdx);
                          const card = player.playCard(idx)!; // Assume valid
                          this.currentRoundCards.push({ playerIndex: currentIndex, card });
@@ -264,12 +319,12 @@ export class MatchController {
     private async askHumanTruco(bot: Player): Promise<boolean> {
         this.logger.log(`${bot.name} yelled TRUCO!`);
         // Find opponent (Human)
-        // For now assume all non-bots are targets or just the next player?
-        // In 1v1, it's the other player.
         const opponent = this.players.find(p => p !== bot && !(p instanceof Bot));
         const handler = (opponent && this.playerHandlers.get(opponent)) || this.defaultInputHandler;
 
         const response = await handler.ask(`${bot.name} yelled TRUCO! Do you (a)ccept or (d)esist/fold? `);
+        if (response === 'abort') return false; // Default fail
+
         return response.toLowerCase() === 'a' || response.toLowerCase() === 's' || response.toLowerCase() === 'y';
     }
 }

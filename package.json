@@ -4,10 +4,7 @@
   "description": "📄 Documentação do Projeto: Truco Web (Regra Paulista) 1. Visão Geral do Projeto Desenvolvimento de um jogo de Truco online via web, focado na regra Paulista. O sistema deve priorizar a integridade das regras no backend e permitir partidas contra inteligência artificial (Bots).",
   "main": "index.js",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview",
-    "cli": "ts-node src/cli.ts"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",

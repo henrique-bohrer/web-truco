@@ -46,6 +46,24 @@ function App() {
         setGameStarted(true);
     };
 
+    const resetGame = () => {
+        if (gameRef.current) {
+            gameRef.current.stopMatch();
+            gameRef.current = null;
+        }
+        setGameStarted(false);
+        setLogs([]);
+        setPlayers([]);
+        setTableCards([]);
+        setScore([0, 0]);
+        setVira(null);
+        setTrucoVal(1);
+        setMaoIndex(0);
+        setActivePlayerIdx(0);
+        setWaitingForInput(false);
+        setPrompt(null);
+    };
+
     useEffect(() => {
         if (gameStarted && !gameRef.current) {
             const onLog = (msg: string) => {
@@ -68,7 +86,7 @@ function App() {
             if (gameMode === 'local') {
                 const p1 = new Player("Player 1", PlayerType.Human);
                 const p2 = new Player("Player 2", PlayerType.Human);
-                game.addPlayer(p1, webIO); // Share handler for hotseat
+                game.addPlayer(p1, webIO);
                 game.addPlayer(p2, webIO);
             } else {
                 const human = new Player("Human", PlayerType.Human);
@@ -114,13 +132,17 @@ function App() {
 
     const bottomPlayer = players[0];
     const topPlayer = players[1];
-
     const showTopCards = gameMode === 'local';
 
     return (
         <div className="game-container">
             <div className="header">
-                <div className="score-board">
+                 {/* Back Button */}
+                <button onClick={resetGame} style={{ fontSize: '12px', padding: '5px 10px', marginRight: '10px' }}>
+                    Menu
+                </button>
+
+                <div className="score-board" style={{ flexGrow: 1 }}>
                     <h2>Truco Web ({gameMode === 'bot' ? 'Vs Bot' : 'Local'})</h2>
                     <div>{players[0]?.name}: {score[0]} | {players[1]?.name}: {score[1]}</div>
                     <div>Truco Value: {trucoVal}</div>
