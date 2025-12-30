@@ -208,6 +208,20 @@ button.fold-btn {
     }
 }
 
+.game-board {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    justify-content: space-between;
+    padding: 10px 0;
+    position: relative;
+}
+
+.player-area {
+    position: relative;
+    width: 100%;
+}
+
 .hand-container {
     display: flex;
     justify-content: center;

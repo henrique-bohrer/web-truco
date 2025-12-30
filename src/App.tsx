@@ -135,27 +135,6 @@ function App() {
     const topPlayer = players[1];
     const showTopCards = gameMode === 'local';
 
-    // Helper to calculate card fan style
-    const getCardStyle = (index: number, total: number, isTop: boolean = false): React.CSSProperties => {
-        if (total === 0) return {};
-
-        // Spread angle settings
-        const spreadAngle = 20; // Degrees between cards
-        const centerIndex = (total - 1) / 2;
-        const rotate = (index - centerIndex) * spreadAngle;
-
-        // Vertical offset for arc effect (center card higher)
-        // y = a * x^2 parabola equation roughly
-        const offset = Math.abs(index - centerIndex);
-        const translateY = offset * 10;
-
-        return {
-            transform: `rotate(${isTop ? -rotate : rotate}deg) translateY(${isTop ? -translateY : translateY}px)`,
-            margin: '0 -15px', // Negative margin for overlap
-            zIndex: index, // Stack order
-        };
-    };
-
     return (
         <div className="game-container">
             <div className="header">
@@ -236,7 +215,7 @@ function App() {
 
                 {/* Bottom Hand (Player 1 or Human) */}
                 <div className="player-area bottom-player">
-                    <div className="player-name">{bottomPlayer?.name}</div>
+                    <div className="player-name" style={{position: 'absolute', bottom: '10px', left: '10px', color: 'white', zIndex: 20}}>{bottomPlayer?.name}</div>
                     {bottomPlayer && (
                         <Hand
                             cards={bottomPlayer.hand}
