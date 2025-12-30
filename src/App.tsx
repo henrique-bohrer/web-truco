@@ -5,6 +5,7 @@ import { Bot } from './lib/Bot';
 import { PlayerType, Rank, ICard } from './lib/types';
 import { WebIO } from './lib/WebIO';
 import Card from './components/Card';
+import Hand from './components/Hand';
 
 function App() {
     const [gameStarted, setGameStarted] = useState(false);
@@ -156,30 +157,28 @@ function App() {
             </div>
 
             {/* Game Board */}
-            <div style={{ display: 'flex', flexDirection: 'column', height: '600px', justifyContent: 'space-between', padding: '20px 0' }}>
+            <div className="game-board">
 
                 {/* Top Hand (Player 2 or Bot) */}
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
-                    <div style={{ position: 'absolute', top: '140px', color: 'white' }}>{topPlayer?.name}</div>
-                    {topPlayer && topPlayer.hand.map((card, i) => (
-                        <Card
-                            key={i}
-                            card={card}
-                            hidden={!showTopCards} // Hide if Bot, Show if Local
-                            onClick={() => {
-                                // Allow P2 to click if Local and Turn
+                <div className="player-area top-player">
+                    <div className="player-name">{topPlayer?.name}</div>
+                    {topPlayer && (
+                        <Hand
+                            cards={topPlayer.hand}
+                            position="top"
+                            hidden={!showTopCards}
+                            onCardClick={(i) => {
                                 if (gameMode === 'local' && activePlayerIdx === 1 && waitingForInput && prompt?.includes("Choose card")) {
                                     handleInput(i.toString());
                                 }
                             }}
                             disabled={!(gameMode === 'local' && activePlayerIdx === 1 && waitingForInput)}
                         />
-                    ))}
-                    {topPlayer && topPlayer.hand.length === 0 && <div style={{color: 'white', opacity: 0.5}}>No cards</div>}
+                    )}
                 </div>
 
                 {/* Table Area (Middle) */}
-                <div className="table-area" style={{ position: 'relative', minHeight: '200px' }}>
+                <div className="table-area">
                     {tableCards.length === 0 && <div style={{ color: 'white', opacity: 0.5 }}>Table Empty</div>}
                     <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
                         {tableCards.map((item, i) => {
@@ -212,22 +211,20 @@ function App() {
                 </div>
 
                 {/* Bottom Hand (Player 1 or Human) */}
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
-                    <div style={{ position: 'absolute', bottom: '180px', color: 'white' }}>{bottomPlayer?.name}</div>
-                    {bottomPlayer && bottomPlayer.hand.map((card, i) => (
-                        <Card
-                            key={i}
-                            card={card}
-                            onClick={() => {
-                                // Allow P1 click if active
+                <div className="player-area bottom-player">
+                    <div className="player-name">{bottomPlayer?.name}</div>
+                    {bottomPlayer && (
+                        <Hand
+                            cards={bottomPlayer.hand}
+                            position="bottom"
+                            onCardClick={(i) => {
                                 if (activePlayerIdx === 0 && waitingForInput && prompt?.includes("Choose card")) {
                                     handleInput(i.toString());
                                 }
                             }}
                             disabled={!(activePlayerIdx === 0 && waitingForInput && prompt?.includes("Choose card"))}
                         />
-                    ))}
-                    {bottomPlayer && bottomPlayer.hand.length === 0 && <div style={{color: 'white', opacity: 0.5}}>No cards</div>}
+                    )}
                 </div>
             </div>
 
