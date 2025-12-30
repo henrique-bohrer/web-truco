@@ -135,25 +135,49 @@ function App() {
     const topPlayer = players[1];
     const showTopCards = gameMode === 'local';
 
+    // Helper to calculate card fan style
+    const getCardStyle = (index: number, total: number, isTop: boolean = false): React.CSSProperties => {
+        if (total === 0) return {};
+
+        // Spread angle settings
+        const spreadAngle = 20; // Degrees between cards
+        const centerIndex = (total - 1) / 2;
+        const rotate = (index - centerIndex) * spreadAngle;
+
+        // Vertical offset for arc effect (center card higher)
+        // y = a * x^2 parabola equation roughly
+        const offset = Math.abs(index - centerIndex);
+        const translateY = offset * 10;
+
+        return {
+            transform: `rotate(${isTop ? -rotate : rotate}deg) translateY(${isTop ? -translateY : translateY}px)`,
+            margin: '0 -15px', // Negative margin for overlap
+            zIndex: index, // Stack order
+        };
+    };
+
     return (
         <div className="game-container">
             <div className="header">
-                 {/* Back Button */}
-                <button onClick={resetGame} style={{ fontSize: '12px', padding: '5px 10px', marginRight: '10px' }}>
-                    Menu
-                </button>
+                {/* Vira (Left Side) */}
+                <div className="vira-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginRight: '10px' }}>
+                    <h3>Vira</h3>
+                    {vira && (
+                        <Card card={{ rank: vira, suit: '♦️' } as any} size="small" />
+                    )}
+                </div>
 
+                {/* Score Board (Center) */}
                 <div className="score-board" style={{ flexGrow: 1 }}>
                     <h2>Truco Web ({gameMode === 'bot' ? 'Vs Bot' : 'Local'})</h2>
                     <div>{players[0]?.name}: {score[0]} | {players[1]?.name}: {score[1]}</div>
                     <div>Truco Value: {trucoVal}</div>
                 </div>
-                <div className="vira-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                     <h3>Vira</h3>
-                     {vira && (
-                         <Card card={{ rank: vira, suit: '♦️' } as any} size="small" />
-                     )}
-                </div>
+
+                {/* Back Button (Right Side) */}
+                <button onClick={resetGame} style={{ fontSize: '12px', padding: '5px 10px', marginLeft: '10px', height: 'fit-content', alignSelf: 'center' }}>
+                    Menu
+                </button>
             </div>
 
             {/* Game Board */}
@@ -182,29 +206,29 @@ function App() {
                     {tableCards.length === 0 && <div style={{ color: 'white', opacity: 0.5 }}>Table Empty</div>}
                     <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
                         {tableCards.map((item, i) => {
-                             let animClass = '';
-                             // Map Index 0 to Bottom, 1 to Top
-                             if (item.playerIndex === 0) {
-                                 animClass = 'anim-bottom';
-                             } else {
-                                 animClass = 'anim-top';
-                             }
+                            let animClass = '';
+                            // Map Index 0 to Bottom, 1 to Top
+                            if (item.playerIndex === 0) {
+                                animClass = 'anim-bottom';
+                            } else {
+                                animClass = 'anim-top';
+                            }
 
-                             return (
+                            return (
                                 <div key={i} className={`played-card ${animClass}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                                     <Card card={item.card} />
                                     <span style={{ color: 'white', marginTop: '5px', fontSize: '12px' }}>
                                         {players[item.playerIndex]?.name || `P${item.playerIndex}`}
                                     </span>
                                 </div>
-                             );
+                            );
                         })}
                     </div>
 
                     {/* Mao Indicator */}
-                    <div style={{ position: 'absolute', right: '-150px', top: '50%', transform: 'translateY(-50%)', textAlign: 'right', color: 'white', background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '5px', width: '120px' }}>
-                        <div style={{ fontSize: '12px', textTransform: 'uppercase', marginBottom: '5px' }}>Começa (Mão)</div>
-                        <div style={{ fontSize: '16px', fontWeight: 'bold' }}>
+                    <div style={{ position: 'absolute', right: '10px', bottom: '10px', textAlign: 'right', color: 'white', background: 'rgba(0,0,0,0.3)', padding: '5px', borderRadius: '5px' }}>
+                        <div style={{ fontSize: '10px', textTransform: 'uppercase' }}>Mão</div>
+                        <div style={{ fontSize: '14px', fontWeight: 'bold' }}>
                             {players[maoIndex]?.name || '...'}
                         </div>
                     </div>
@@ -239,7 +263,7 @@ function App() {
                             </button>
                         )}
 
-                         {/* Fold Button */}
+                        {/* Fold Button */}
                         {prompt?.includes("'d' to Fold") && (
                             <button className="fold-btn" onClick={() => handleInput('d')}>
                                 Desistir (Fold)

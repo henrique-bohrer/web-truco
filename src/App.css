@@ -3,9 +3,11 @@ body {
     background-color: #2e7d32; /* Green table */
     color: white;
     margin: 0;
-    padding: 20px;
+    padding: 0;
     display: flex;
     justify-content: center;
+    overflow: hidden; /* Prevent scrolling on full screen apps */
+    height: 100vh;
 }
 
 .game-container {
@@ -60,7 +62,7 @@ body {
     min-height: 200px;
     border: 2px dashed rgba(255,255,255,0.3);
     border-radius: 10px;
-    margin-bottom: 20px;
+    margin: 10px 0;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -190,6 +192,35 @@ button.fold-btn {
     cursor: pointer;
     transition: transform 0.2s, box-shadow 0.2s;
     flex-shrink: 0; /* Prevent squishing */
+}
+
+/* Responsive Card Sizes */
+@media (max-width: 600px) {
+    .card {
+        width: 80px;
+        height: 112px;
+    }
+    .card-corner {
+        font-size: 16px;
+    }
+    .card-center {
+        font-size: 40px;
+    }
+}
+
+.hand-container {
+    display: flex;
+    justify-content: center;
+    height: 160px; /* Space for fanned cards */
+    position: relative;
+    width: 100%;
+    align-items: flex-end; /* Align bottom */
+}
+
+/* For top hand, we might want to align top, or just rotate */
+.hand-container.top {
+    align-items: flex-start;
+    height: 150px;
 }
 
 .card:hover {
