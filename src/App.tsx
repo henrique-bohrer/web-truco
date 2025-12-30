@@ -5,6 +5,7 @@ import { Bot } from './lib/Bot';
 import { PlayerType, Rank, ICard } from './lib/types';
 import { WebIO } from './lib/WebIO';
 import Card from './components/Card';
+import Hand from './components/Hand';
 
 function App() {
     const [gameStarted, setGameStarted] = useState(false);
@@ -134,27 +135,6 @@ function App() {
     const topPlayer = players[1];
     const showTopCards = gameMode === 'local';
 
-    // Helper to calculate card fan style
-    const getCardStyle = (index: number, total: number, isTop: boolean = false): React.CSSProperties => {
-        if (total === 0) return {};
-
-        // Spread angle settings
-        const spreadAngle = 20; // Degrees between cards
-        const centerIndex = (total - 1) / 2;
-        const rotate = (index - centerIndex) * spreadAngle;
-
-        // Vertical offset for arc effect (center card higher)
-        // y = a * x^2 parabola equation roughly
-        const offset = Math.abs(index - centerIndex);
-        const translateY = offset * 10;
-
-        return {
-            transform: `rotate(${isTop ? -rotate : rotate}deg) translateY(${isTop ? -translateY : translateY}px)`,
-            margin: '0 -15px', // Negative margin for overlap
-            zIndex: index, // Stack order
-        };
-    };
-
     return (
         <div className="game-container">
             <div className="header">
@@ -179,28 +159,25 @@ function App() {
                 </button>
             </div>
 
-            {/* Game Board - Flexible height */}
-            <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, justifyContent: 'space-between', padding: '10px 0', position: 'relative' }}>
+            {/* Game Board */}
+            <div className="game-board">
 
                 {/* Top Hand (Player 2 or Bot) */}
-                <div className="hand-container top">
-                    <div style={{ position: 'absolute', top: '10px', left: '10px', color: 'white', zIndex: 20 }}>{topPlayer?.name}</div>
-                    {topPlayer && topPlayer.hand.map((card, i) => (
-                        <Card
-                            key={i}
-                            card={card}
-                            hidden={!showTopCards} // Hide if Bot, Show if Local
-                            style={getCardStyle(i, topPlayer.hand.length, true)}
-                            onClick={() => {
-                                // Allow P2 to click if Local and Turn
+                <div className="player-area top-player">
+                    <div className="player-name" style={{position: 'absolute', top: '10px', left: '10px', color: 'white', zIndex: 20}}>{topPlayer?.name}</div>
+                    {topPlayer && (
+                        <Hand
+                            cards={topPlayer.hand}
+                            position="top"
+                            hidden={!showTopCards}
+                            onCardClick={(i) => {
                                 if (gameMode === 'local' && activePlayerIdx === 1 && waitingForInput && prompt?.includes("Choose card")) {
                                     handleInput(i.toString());
                                 }
                             }}
                             disabled={!(gameMode === 'local' && activePlayerIdx === 1 && waitingForInput)}
                         />
-                    ))}
-                    {topPlayer && topPlayer.hand.length === 0 && <div style={{color: 'white', opacity: 0.5}}>No cards</div>}
+                    )}
                 </div>
 
                 {/* Table Area (Middle) */}
@@ -237,23 +214,20 @@ function App() {
                 </div>
 
                 {/* Bottom Hand (Player 1 or Human) */}
-                <div className="hand-container">
-                    <div style={{ position: 'absolute', bottom: '10px', left: '10px', color: 'white', zIndex: 20 }}>{bottomPlayer?.name}</div>
-                    {bottomPlayer && bottomPlayer.hand.map((card, i) => (
-                        <Card
-                            key={i}
-                            card={card}
-                            style={getCardStyle(i, bottomPlayer.hand.length, false)}
-                            onClick={() => {
-                                // Allow P1 click if active
+                <div className="player-area bottom-player">
+                    <div className="player-name" style={{position: 'absolute', bottom: '10px', left: '10px', color: 'white', zIndex: 20}}>{bottomPlayer?.name}</div>
+                    {bottomPlayer && (
+                        <Hand
+                            cards={bottomPlayer.hand}
+                            position="bottom"
+                            onCardClick={(i) => {
                                 if (activePlayerIdx === 0 && waitingForInput && prompt?.includes("Choose card")) {
                                     handleInput(i.toString());
                                 }
                             }}
                             disabled={!(activePlayerIdx === 0 && waitingForInput && prompt?.includes("Choose card"))}
                         />
-                    ))}
-                    {bottomPlayer && bottomPlayer.hand.length === 0 && <div style={{color: 'white', opacity: 0.5}}>No cards</div>}
+                    )}
                 </div>
             </div>
 
