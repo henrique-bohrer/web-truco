@@ -12,6 +12,7 @@ function App() {
     const [gameStarted, setGameStarted] = useState(false);
     const [gameMode, setGameMode] = useState<'bot' | 'local' | 'online'>('bot');
     const [roomId, setRoomId] = useState<string>('');
+    const [nickname, setNickname] = useState<string>('');
     const [serverUrl, setServerUrl] = useState<string>('http://localhost:3001');
     const [isOnline, setIsOnline] = useState(false);
 
@@ -61,7 +62,7 @@ function App() {
         socketRef.current = newSocket;
 
         newSocket.on('connect', () => {
-            newSocket.emit('join-room', roomId);
+            newSocket.emit('join-room', { roomId, nickname });
         });
 
         newSocket.on('log', (msg: string) => {
@@ -177,8 +178,17 @@ function App() {
     if (!gameStarted) {
         if (isOnline) {
              return (
-                <div className="game-container" style={{ textAlign: 'center', height: '300px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <div className="game-container" style={{ textAlign: 'center', height: '350px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                     <h1>Online Multiplayer</h1>
+                    <div style={{ marginBottom: '10px' }}>
+                        <input
+                            type="text"
+                            placeholder="Nickname"
+                            value={nickname}
+                            onChange={(e) => setNickname(e.target.value)}
+                            style={{ padding: '10px', width: '250px', fontSize: '16px' }}
+                        />
+                    </div>
                     <div style={{ marginBottom: '10px' }}>
                         <input
                             type="text"
@@ -188,17 +198,56 @@ function App() {
                             style={{ padding: '10px', width: '250px', fontSize: '16px' }}
                         />
                     </div>
-                    <div style={{ marginBottom: '20px' }}>
-                        <input
-                            type="text"
-                            placeholder="Enter Room ID (e.g. room1)"
-                            value={roomId}
-                            onChange={(e) => setRoomId(e.target.value)}
-                            style={{ padding: '10px', width: '250px', fontSize: '16px' }}
-                        />
+                    <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                        <div style={{fontSize: '14px', marginBottom: '5px'}}>Join Existing Room:</div>
+                        <div style={{display: 'flex', gap: '5px'}}>
+                            <input
+                                type="text"
+                                placeholder="Room ID"
+                                value={roomId}
+                                onChange={(e) => setRoomId(e.target.value)}
+                                style={{ padding: '10px', width: '150px', fontSize: '16px' }}
+                            />
+                            <button onClick={connectOnline} disabled={!roomId || !serverUrl || !nickname}>Join</button>
+                        </div>
+                        <div style={{fontSize: '14px', margin: '5px 0'}}>OR</div>
+                        <button onClick={() => {
+                            const newRoomId = Math.random().toString(36).substring(2, 7).toUpperCase();
+                            setRoomId(newRoomId);
+                            // Need to defer connection until state updates, but simple way is to force it or reuse connectOnline
+                            // React state update is async.
+                            // Let's just set ID and auto-connect in effect? No, simpler:
+                            // We can't easily call connectOnline with new ID immediately unless we pass it.
+                            // Let's just set the ID and let user click 'Create' which is actually Join with new ID.
+                            // Better: "Create Room" button calls connect with new ID.
+                            const socket = io(serverUrl);
+                            socketRef.current = socket;
+                            socket.on('connect', () => {
+                                socket.emit('join-room', { roomId: newRoomId, nickname });
+                            });
+                            // ... setup other listeners (duplicated code, should refactor)
+                            // Refactor connectOnline to accept optional ID
+
+                            socket.on('log', (msg: string) => setLogs(p => [...p, msg]));
+                            socket.on('ask', (q: string) => {
+                                setPrompt(q);
+                                setWaitingForInput(true);
+                                resolveInputRef.current = (a) => socket.emit('answer', a);
+                            });
+                            socket.on('update-state', () => socket.emit('request-state'));
+                            socket.on('state-update', (s: any) => {
+                                setPlayers(s.players);
+                                setTableCards(s.tableCards);
+                                setScore(s.score);
+                                setVira(s.vira);
+                                setTrucoVal(s.trucoVal);
+                                setMaoIndex(s.maoIndex);
+                            });
+                            setGameStarted(true);
+
+                        }} disabled={!serverUrl || !nickname}>Create New Room</button>
                     </div>
                     <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
-                        <button onClick={connectOnline} disabled={!roomId || !serverUrl}>Join Room</button>
                         <button onClick={() => setIsOnline(false)}>Back</button>
                     </div>
                 </div>
