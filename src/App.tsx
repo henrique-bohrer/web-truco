@@ -119,6 +119,10 @@ function App() {
         }
     };
 
+    // Check for Game Over
+    const gameOver = score[0] >= 12 || score[1] >= 12;
+    const winnerName = score[0] >= 12 ? players[0]?.name : players[1]?.name;
+
     if (!gameStarted) {
         return (
             <div className="game-container" style={{ textAlign: 'center', height: '300px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
@@ -129,6 +133,24 @@ function App() {
                 </div>
             </div>
         );
+    }
+
+    if (gameOver) {
+         return (
+             <div className="game-container" style={{ textAlign: 'center', height: '300px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                 <h1>Game Over!</h1>
+                 <h2>Winner: {winnerName}</h2>
+                 <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', marginTop: '20px' }}>
+                     <button onClick={() => {
+                         // Full reset then restart same mode
+                         const mode = gameMode;
+                         resetGame();
+                         setTimeout(() => startGame(mode), 100);
+                     }}>Play Again</button>
+                     <button onClick={resetGame}>Menu</button>
+                 </div>
+             </div>
+         );
     }
 
     const bottomPlayer = players[0];
