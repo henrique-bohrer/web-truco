@@ -44,6 +44,9 @@ export class MatchController {
     public getTrucoValue() { return this.trucoValue; }
     public getMaoPlayerIndex() { return this.currentTurnIndex; }
 
+    private activePlayerIndex: number = 0;
+    public getActivePlayerIndex() { return this.activePlayerIndex; }
+
     private sleep(ms: number) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
@@ -141,6 +144,7 @@ export class MatchController {
         let currentIndex = startIndex;
 
         for (let i = 0; i < this.players.length; i++) {
+            this.activePlayerIndex = currentIndex;
             const player = this.players[currentIndex];
             this.logger.log(`Turn: ${player.name}`);
 
@@ -265,7 +269,7 @@ export class MatchController {
         const opponent = this.players.find(p => p !== bot && !(p instanceof Bot));
         const handler = (opponent && this.playerHandlers.get(opponent)) || this.defaultInputHandler;
 
-        const response = await handler.ask("Bot yelled TRUCO! Do you (a)ccept or (d)esist/fold? ");
+        const response = await handler.ask(`${bot.name} yelled TRUCO! Do you (a)ccept or (d)esist/fold? `);
         return response.toLowerCase() === 'a' || response.toLowerCase() === 's' || response.toLowerCase() === 'y';
     }
 }

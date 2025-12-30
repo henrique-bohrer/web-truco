@@ -7,6 +7,9 @@ import { WebIO } from './lib/WebIO';
 import Card from './components/Card';
 
 function App() {
+    const [gameStarted, setGameStarted] = useState(false);
+    const [gameMode, setGameMode] = useState<'bot' | 'local'>('bot');
+
     const [logs, setLogs] = useState<string[]>([]);
     const [waitingForInput, setWaitingForInput] = useState(false);
     const [prompt, setPrompt] = useState<string | null>(null);
@@ -18,6 +21,7 @@ function App() {
     const [vira, setVira] = useState<Rank | null>(null);
     const [trucoVal, setTrucoVal] = useState<number>(1);
     const [maoIndex, setMaoIndex] = useState<number>(0);
+    const [activePlayerIdx, setActivePlayerIdx] = useState<number>(0);
     const [updateTrigger, setUpdateTrigger] = useState(0);
 
     const resolveInputRef = useRef<((answer: string) => void) | null>(null);
@@ -32,12 +36,18 @@ function App() {
             setVira(gameRef.current.getVira());
             setTrucoVal(gameRef.current.getTrucoValue());
             setMaoIndex(gameRef.current.getMaoPlayerIndex());
+            setActivePlayerIdx(gameRef.current.getActivePlayerIndex());
             setUpdateTrigger(x => x + 1);
         }
     };
 
+    const startGame = (mode: 'bot' | 'local') => {
+        setGameMode(mode);
+        setGameStarted(true);
+    };
+
     useEffect(() => {
-        if (!gameRef.current) {
+        if (gameStarted && !gameRef.current) {
             const onLog = (msg: string) => {
                 setLogs(prev => [...prev, msg]);
             };
@@ -55,18 +65,24 @@ function App() {
             const webIO = new WebIO(onLog, onAsk, onUpdate);
             const game = new MatchController(webIO, webIO);
 
-            const human = new Player("Human", PlayerType.Human);
-            const bot = new Bot("Bot");
-
-            game.addPlayer(human, webIO);
-            game.addPlayer(bot);
+            if (gameMode === 'local') {
+                const p1 = new Player("Player 1", PlayerType.Human);
+                const p2 = new Player("Player 2", PlayerType.Human);
+                game.addPlayer(p1, webIO); // Share handler for hotseat
+                game.addPlayer(p2, webIO);
+            } else {
+                const human = new Player("Human", PlayerType.Human);
+                const bot = new Bot("Bot");
+                game.addPlayer(human, webIO);
+                game.addPlayer(bot);
+            }
 
             gameRef.current = game;
             syncState(); // Initial sync
 
             game.startMatch().catch(err => console.error(err));
         }
-    }, []);
+    }, [gameStarted, gameMode]);
 
     useEffect(() => {
         if (logEndRef.current) {
@@ -84,27 +100,34 @@ function App() {
         }
     };
 
-    // Derived State Helpers
-    const humanPlayer = players.find(p => p.type === PlayerType.Human);
-    const botPlayer = players.find(p => p.type === PlayerType.Bot);
+    if (!gameStarted) {
+        return (
+            <div className="game-container" style={{ textAlign: 'center', height: '300px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <h1>Truco Web</h1>
+                <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
+                    <button onClick={() => startGame('bot')}>Play vs Bot</button>
+                    <button onClick={() => startGame('local')}>Local Multiplayer</button>
+                </div>
+            </div>
+        );
+    }
 
-    // Table Cards needs to handle "Played by who?"
-    // For now we just list them.
-    // If we want to show position, we need to know who played what.
-    // tableCards is an array of objects.
+    const bottomPlayer = players[0];
+    const topPlayer = players[1];
+
+    const showTopCards = gameMode === 'local';
 
     return (
         <div className="game-container">
             <div className="header">
                 <div className="score-board">
-                    <h2>Truco Web</h2>
-                    <div>Team 1 (You): {score[0]} | Team 2 (Bot): {score[1]}</div>
+                    <h2>Truco Web ({gameMode === 'bot' ? 'Vs Bot' : 'Local'})</h2>
+                    <div>{players[0]?.name}: {score[0]} | {players[1]?.name}: {score[1]}</div>
                     <div>Truco Value: {trucoVal}</div>
                 </div>
                 <div className="vira-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                      <h3>Vira</h3>
                      {vira && (
-                         // We need a dummy card object for Vira just for display
                          <Card card={{ rank: vira, suit: '♦️' } as any} size="small" />
                      )}
                 </div>
@@ -113,12 +136,24 @@ function App() {
             {/* Game Board */}
             <div style={{ display: 'flex', flexDirection: 'column', height: '600px', justifyContent: 'space-between', padding: '20px 0' }}>
 
-                {/* Opponent Hand (Top) */}
+                {/* Top Hand (Player 2 or Bot) */}
                 <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
-                    {botPlayer && botPlayer.hand.map((_, i) => (
-                        <Card key={i} hidden />
+                    <div style={{ position: 'absolute', top: '140px', color: 'white' }}>{topPlayer?.name}</div>
+                    {topPlayer && topPlayer.hand.map((card, i) => (
+                        <Card
+                            key={i}
+                            card={card}
+                            hidden={!showTopCards} // Hide if Bot, Show if Local
+                            onClick={() => {
+                                // Allow P2 to click if Local and Turn
+                                if (gameMode === 'local' && activePlayerIdx === 1 && waitingForInput && prompt?.includes("Choose card")) {
+                                    handleInput(i.toString());
+                                }
+                            }}
+                            disabled={!(gameMode === 'local' && activePlayerIdx === 1 && waitingForInput)}
+                        />
                     ))}
-                    {botPlayer && botPlayer.hand.length === 0 && <div style={{color: 'white', opacity: 0.5}}>No cards</div>}
+                    {topPlayer && topPlayer.hand.length === 0 && <div style={{color: 'white', opacity: 0.5}}>No cards</div>}
                 </div>
 
                 {/* Table Area (Middle) */}
@@ -127,8 +162,8 @@ function App() {
                     <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
                         {tableCards.map((item, i) => {
                              let animClass = '';
-                             // Simple 1v1 mapping
-                             if (players[item.playerIndex]?.type === PlayerType.Human) {
+                             // Map Index 0 to Bottom, 1 to Top
+                             if (item.playerIndex === 0) {
                                  animClass = 'anim-bottom';
                              } else {
                                  animClass = 'anim-top';
@@ -154,21 +189,23 @@ function App() {
                     </div>
                 </div>
 
-                {/* Player Hand (Bottom) */}
+                {/* Bottom Hand (Player 1 or Human) */}
                 <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
-                    {humanPlayer && humanPlayer.hand.map((card, i) => (
+                    <div style={{ position: 'absolute', bottom: '180px', color: 'white' }}>{bottomPlayer?.name}</div>
+                    {bottomPlayer && bottomPlayer.hand.map((card, i) => (
                         <Card
                             key={i}
                             card={card}
                             onClick={() => {
-                                if (waitingForInput && prompt?.includes("Choose card")) {
+                                // Allow P1 click if active
+                                if (activePlayerIdx === 0 && waitingForInput && prompt?.includes("Choose card")) {
                                     handleInput(i.toString());
                                 }
                             }}
-                            disabled={!waitingForInput || !prompt?.includes("Choose card")}
+                            disabled={!(activePlayerIdx === 0 && waitingForInput && prompt?.includes("Choose card"))}
                         />
                     ))}
-                    {humanPlayer && humanPlayer.hand.length === 0 && <div style={{color: 'white', opacity: 0.5}}>No cards</div>}
+                    {bottomPlayer && bottomPlayer.hand.length === 0 && <div style={{color: 'white', opacity: 0.5}}>No cards</div>}
                 </div>
             </div>
 
@@ -191,7 +228,7 @@ function App() {
                         )}
 
                         {/* Truco Response Buttons */}
-                        {prompt?.includes("Bot yelled TRUCO") && (
+                        {prompt?.includes("yelled TRUCO") && (
                             <>
                                 <button className="truco-btn" onClick={() => handleInput('a')}>
                                     ACEITAR
@@ -204,8 +241,7 @@ function App() {
                     </div>
                 )}
             </div>
-
-            {/* Logs Overlay or Collapsible? Keeping at bottom for now */}
+            {/* Logs ... */}
             <div className="log-container" style={{ marginTop: '20px', height: '100px' }}>
                 {logs.map((log, i) => (
                     <div key={i}>{log}</div>
@@ -215,5 +251,4 @@ function App() {
         </div>
     );
 }
-
 export default App;
