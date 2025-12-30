@@ -136,36 +136,10 @@ export class MatchController {
                     this.roundScore[0] += 1;
                     this.roundScore[1] += 1;
                 } else {
-                    // Tie in 2nd or 3rd round: Whoever won the first round wins?
-                    // Or if 2nd round tie: Whoever won first wins.
-                    // If 3rd round tie: Whoever won first wins.
-                    // If all tie (rare): No points?
-                    // Standard Truco: Tie in 2nd or 3rd -> Winner of 1st round wins.
-                    // If 1st was tie -> Winner of 2nd wins.
-                    // If 1st and 2nd tie -> Winner of 3rd wins.
-                    // If all 3 tie -> No one wins? Or coin flip? Usually hand is void or team who started wins?
-
-                    // Simple logic here:
                     if (this.roundScore[0] > this.roundScore[1]) {
                         this.roundScore[0] = 2;
                     } else if (this.roundScore[1] > this.roundScore[0]) {
                         this.roundScore[1] = 2;
-                    } else {
-                        // All tied so far?
-                        // If round 3 and tied -> Hand ends drawn?
-                        // In Paulista, 1st draw -> 2nd defines. 2nd draw -> 3rd defines. 3rd draw -> Winner of 1st wins? No.
-                        // Paulista:
-                        // 1. Draw -> Winner of 2nd wins hand.
-                        // 2. Win -> Draw -> Winner of 1st wins hand.
-                        // 3. Win -> Win -> Winner.
-                        // 4. Win -> Loss -> Draw -> Winner of 1st wins hand.
-                        // 5. Draw -> Draw -> Winner of 3rd wins hand.
-                        // 6. Draw -> Draw -> Draw -> No one points (or Dealer wins/loses depending on regional)
-
-                        // My simplified logic above:
-                        // if r1 draw -> both score 1.
-                        // then r2 winner reaches 2 and wins.
-                        // if r2 draw -> both reach 2?
                     }
                 }
             } else {
@@ -226,13 +200,8 @@ export class MatchController {
 
                 const moveIndex = player.decideMove(state);
                 const card = player.playCard(moveIndex)!;
-                if (card) {
-                    this.currentRoundCards.push({ playerIndex: currentIndex, card });
-                    this.logger.log(`${player.name} played ${card.toString()}`);
-                } else {
-                    this.logger.log(`${player.name} has no cards!`);
-                    // Skip or fold?
-                }
+                this.currentRoundCards.push({ playerIndex: currentIndex, card });
+                this.logger.log(`${player.name} played ${card.toString()}`);
                 await this.sleep(1000);
             } else {
                 // Human move
@@ -293,14 +262,8 @@ export class MatchController {
 
                          const idx = parseInt(cardIdx);
                          const card = player.playCard(idx)!; // Assume valid
-                         if (card) {
-                            this.currentRoundCards.push({ playerIndex: currentIndex, card });
-                            this.logger.log(`${player.name} played ${card.toString()}`);
-                         } else {
-                             // Should not happen if validation passed
-                             this.logger.log("Error playing card.");
-                             return { winnerIndex: -1, type: 'draw' };
-                         }
+                         this.currentRoundCards.push({ playerIndex: currentIndex, card });
+                         this.logger.log(`${player.name} played ${card.toString()}`);
                      } else {
                          this.logger.log("Already max value!");
                          i--;
@@ -326,11 +289,6 @@ export class MatchController {
         let bestCardIdx = 0;
         let isDraw = false;
 
-        // If cards are empty, it means we had a draw or error in loop
-        if (this.currentRoundCards.length === 0) {
-             return { winnerIndex: -1, type: 'draw' };
-        }
-
         for (let i = 1; i < this.currentRoundCards.length; i++) {
             const current = this.currentRoundCards[i];
             const best = this.currentRoundCards[bestCardIdx];
@@ -351,16 +309,6 @@ export class MatchController {
             await this.sleep(2000);
             return { winnerIndex: -1, type: 'draw' };
         }
-        // This line caused the crash because bestCardIdx was valid index in currentRoundCards,
-        // but currentRoundCards might be empty if loop didn't run?
-        // No, currentRoundCards must have items if isDraw is false and players > 0.
-        // Wait, the crash was "Cannot read properties of null (reading 'toString')"
-        // at MatchController.<anonymous> (/app/src/lib/MatchController.ts:204:63)
-        // Line 204 corresponds to `this.logger.log(`${player.name} played ${card.toString()}`);`
-        // So card was null.
-        // `const card = player.playCard(moveIndex)!;` returned undefined/null?
-        // Bot.playCard uses pop(). If hand is empty?
-
         const winner = this.currentRoundCards[bestCardIdx].playerIndex;
         this.logger.log(`Round finished. Winner: ${this.players[winner].name}`);
         await this.sleep(2000);
@@ -370,21 +318,8 @@ export class MatchController {
     // Helper to ask Human
     private async askHumanTruco(bot: Player): Promise<boolean> {
         this.logger.log(`${bot.name} yelled TRUCO!`);
-        // Find opponent (Human or Bot)
-        const opponent = this.players.find(p => p !== bot);
-
-        if (opponent instanceof Bot) {
-            // Bot opponent: decide automatically
-             const state: GameStateView = {
-                vira: this.vira!,
-                roundCards: this.currentRoundCards,
-                handScores: this.roundScore
-            };
-            const accept = opponent.shouldAcceptTruco(state);
-            this.logger.log(`${opponent.name} ${accept ? 'accepts' : 'folds'} Truco!`);
-            return accept;
-        }
-
+        // Find opponent (Human)
+        const opponent = this.players.find(p => p !== bot && !(p instanceof Bot));
         const handler = (opponent && this.playerHandlers.get(opponent)) || this.defaultInputHandler;
 
         const response = await handler.ask(`${bot.name} yelled TRUCO! Do you (a)ccept or (d)esist/fold? `);
