@@ -134,6 +134,27 @@ function App() {
     const topPlayer = players[1];
     const showTopCards = gameMode === 'local';
 
+    // Helper to calculate card fan style
+    const getCardStyle = (index: number, total: number, isTop: boolean = false): React.CSSProperties => {
+        if (total === 0) return {};
+
+        // Spread angle settings
+        const spreadAngle = 20; // Degrees between cards
+        const centerIndex = (total - 1) / 2;
+        const rotate = (index - centerIndex) * spreadAngle;
+
+        // Vertical offset for arc effect (center card higher)
+        // y = a * x^2 parabola equation roughly
+        const offset = Math.abs(index - centerIndex);
+        const translateY = offset * 10;
+
+        return {
+            transform: `rotate(${isTop ? -rotate : rotate}deg) translateY(${isTop ? -translateY : translateY}px)`,
+            margin: '0 -15px', // Negative margin for overlap
+            zIndex: index, // Stack order
+        };
+    };
+
     return (
         <div className="game-container">
             <div className="header">
@@ -155,17 +176,18 @@ function App() {
                 </div>
             </div>
 
-            {/* Game Board */}
-            <div style={{ display: 'flex', flexDirection: 'column', height: '600px', justifyContent: 'space-between', padding: '20px 0' }}>
+            {/* Game Board - Flexible height */}
+            <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, justifyContent: 'space-between', padding: '10px 0', position: 'relative' }}>
 
                 {/* Top Hand (Player 2 or Bot) */}
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
-                    <div style={{ position: 'absolute', top: '140px', color: 'white' }}>{topPlayer?.name}</div>
+                <div className="hand-container top">
+                    <div style={{ position: 'absolute', top: '10px', left: '10px', color: 'white', zIndex: 20 }}>{topPlayer?.name}</div>
                     {topPlayer && topPlayer.hand.map((card, i) => (
                         <Card
                             key={i}
                             card={card}
                             hidden={!showTopCards} // Hide if Bot, Show if Local
+                            style={getCardStyle(i, topPlayer.hand.length, true)}
                             onClick={() => {
                                 // Allow P2 to click if Local and Turn
                                 if (gameMode === 'local' && activePlayerIdx === 1 && waitingForInput && prompt?.includes("Choose card")) {
@@ -179,7 +201,7 @@ function App() {
                 </div>
 
                 {/* Table Area (Middle) */}
-                <div className="table-area" style={{ position: 'relative', minHeight: '200px' }}>
+                <div className="table-area">
                     {tableCards.length === 0 && <div style={{ color: 'white', opacity: 0.5 }}>Table Empty</div>}
                     <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
                         {tableCards.map((item, i) => {
@@ -203,21 +225,22 @@ function App() {
                     </div>
 
                     {/* Mao Indicator */}
-                    <div style={{ position: 'absolute', right: '-150px', top: '50%', transform: 'translateY(-50%)', textAlign: 'right', color: 'white', background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '5px', width: '120px' }}>
-                        <div style={{ fontSize: '12px', textTransform: 'uppercase', marginBottom: '5px' }}>Começa (Mão)</div>
-                        <div style={{ fontSize: '16px', fontWeight: 'bold' }}>
+                    <div style={{ position: 'absolute', right: '10px', bottom: '10px', textAlign: 'right', color: 'white', background: 'rgba(0,0,0,0.3)', padding: '5px', borderRadius: '5px' }}>
+                        <div style={{ fontSize: '10px', textTransform: 'uppercase' }}>Mão</div>
+                        <div style={{ fontSize: '14px', fontWeight: 'bold' }}>
                             {players[maoIndex]?.name || '...'}
                         </div>
                     </div>
                 </div>
 
                 {/* Bottom Hand (Player 1 or Human) */}
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
-                    <div style={{ position: 'absolute', bottom: '180px', color: 'white' }}>{bottomPlayer?.name}</div>
+                <div className="hand-container">
+                    <div style={{ position: 'absolute', bottom: '10px', left: '10px', color: 'white', zIndex: 20 }}>{bottomPlayer?.name}</div>
                     {bottomPlayer && bottomPlayer.hand.map((card, i) => (
                         <Card
                             key={i}
                             card={card}
+                            style={getCardStyle(i, bottomPlayer.hand.length, false)}
                             onClick={() => {
                                 // Allow P1 click if active
                                 if (activePlayerIdx === 0 && waitingForInput && prompt?.includes("Choose card")) {

@@ -8,9 +8,10 @@ interface CardProps {
     disabled?: boolean;
     size?: 'small' | 'normal';
     className?: string;
+    style?: React.CSSProperties;
 }
 
-const Card: React.FC<CardProps> = ({ card, hidden, onClick, disabled, size = 'normal', className = '' }) => {
+const Card: React.FC<CardProps> = ({ card, hidden, onClick, disabled, size = 'normal', className = '', style }) => {
     const sizeClass = size === 'small' ? 'card-small' : '';
     const disabledClass = disabled ? 'card-disabled' : '';
 
@@ -19,6 +20,7 @@ const Card: React.FC<CardProps> = ({ card, hidden, onClick, disabled, size = 'no
             <div
                 className={`card card-back ${sizeClass} ${className}`}
                 onClick={!disabled ? onClick : undefined}
+                style={style}
             />
         );
     }
@@ -33,6 +35,7 @@ const Card: React.FC<CardProps> = ({ card, hidden, onClick, disabled, size = 'no
         <div
             className={`card ${colorClass} ${sizeClass} ${disabledClass} ${className}`}
             onClick={!disabled ? onClick : undefined}
+            style={style}
         >
             <div className="card-corner top-left">
                 <span>{card.rank}</span>
