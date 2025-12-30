@@ -158,22 +158,25 @@ function App() {
     return (
         <div className="game-container">
             <div className="header">
-                 {/* Back Button */}
-                <button onClick={resetGame} style={{ fontSize: '12px', padding: '5px 10px', marginRight: '10px' }}>
-                    Menu
-                </button>
-
-                <div className="score-board" style={{ flexGrow: 1 }}>
-                    <h2>Truco Web ({gameMode === 'bot' ? 'Vs Bot' : 'Local'})</h2>
-                    <div>{players[0]?.name}: {score[0]} | {players[1]?.name}: {score[1]}</div>
-                    <div>Truco Value: {trucoVal}</div>
-                </div>
-                <div className="vira-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                 {/* Vira (Left Side) */}
+                 <div className="vira-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginRight: '10px' }}>
                      <h3>Vira</h3>
                      {vira && (
                          <Card card={{ rank: vira, suit: '♦️' } as any} size="small" />
                      )}
                 </div>
+
+                {/* Score Board (Center) */}
+                <div className="score-board" style={{ flexGrow: 1 }}>
+                    <h2>Truco Web ({gameMode === 'bot' ? 'Vs Bot' : 'Local'})</h2>
+                    <div>{players[0]?.name}: {score[0]} | {players[1]?.name}: {score[1]}</div>
+                    <div>Truco Value: {trucoVal}</div>
+                </div>
+
+                 {/* Back Button (Right Side) */}
+                <button onClick={resetGame} style={{ fontSize: '12px', padding: '5px 10px', marginLeft: '10px', height: 'fit-content', alignSelf: 'center' }}>
+                    Menu
+                </button>
             </div>
 
             {/* Game Board - Flexible height */}
