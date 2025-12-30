@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { io, Socket } from 'socket.io-client';
 import { MatchController } from './lib/MatchController';
 import { Player } from './lib/Player';
 import { Bot } from './lib/Bot';
@@ -9,7 +10,10 @@ import Hand from './components/Hand';
 
 function App() {
     const [gameStarted, setGameStarted] = useState(false);
-    const [gameMode, setGameMode] = useState<'bot' | 'local'>('bot');
+    const [gameMode, setGameMode] = useState<'bot' | 'local' | 'online'>('bot');
+    const [roomId, setRoomId] = useState<string>('');
+    const [serverUrl, setServerUrl] = useState<string>('http://localhost:3001');
+    const [isOnline, setIsOnline] = useState(false);
 
     const [logs, setLogs] = useState<string[]>([]);
     const [waitingForInput, setWaitingForInput] = useState(false);
@@ -28,6 +32,7 @@ function App() {
     const resolveInputRef = useRef<((answer: string) => void) | null>(null);
     const gameRef = useRef<MatchController | null>(null);
     const logEndRef = useRef<HTMLDivElement>(null);
+    const socketRef = useRef<Socket | null>(null);
 
     const syncState = () => {
         if (gameRef.current) {
@@ -42,8 +47,49 @@ function App() {
         }
     };
 
-    const startGame = (mode: 'bot' | 'local') => {
+    const startGame = (mode: 'bot' | 'local' | 'online') => {
         setGameMode(mode);
+        if (mode === 'online') {
+            setIsOnline(true);
+        } else {
+            setGameStarted(true);
+        }
+    };
+
+    const connectOnline = () => {
+        const newSocket = io(serverUrl);
+        socketRef.current = newSocket;
+
+        newSocket.on('connect', () => {
+            newSocket.emit('join-room', roomId);
+        });
+
+        newSocket.on('log', (msg: string) => {
+            setLogs(prev => [...prev, msg]);
+        });
+
+        newSocket.on('ask', (question: string) => {
+            setPrompt(question);
+            setWaitingForInput(true);
+            resolveInputRef.current = (answer) => {
+                newSocket.emit('answer', answer);
+            };
+        });
+
+        newSocket.on('update-state', () => {
+             newSocket.emit('request-state');
+        });
+
+        newSocket.on('state-update', (state: any) => {
+             setPlayers(state.players);
+             setTableCards(state.tableCards);
+             setScore(state.score);
+             setVira(state.vira);
+             setTrucoVal(state.trucoVal);
+             setMaoIndex(state.maoIndex);
+             // Cannot deduce active player easily without more info, but prompt handles interaction
+        });
+
         setGameStarted(true);
     };
 
@@ -52,7 +98,12 @@ function App() {
             gameRef.current.stopMatch();
             gameRef.current = null;
         }
+        if (socketRef.current) {
+            socketRef.current.disconnect();
+            socketRef.current = null;
+        }
         setGameStarted(false);
+        setIsOnline(false);
         setLogs([]);
         setPlayers([]);
         setTableCards([]);
@@ -66,7 +117,7 @@ function App() {
     };
 
     useEffect(() => {
-        if (gameStarted && !gameRef.current) {
+        if (gameStarted && !gameRef.current && gameMode !== 'online') {
             const onLog = (msg: string) => {
                 setLogs(prev => [...prev, msg]);
             };
@@ -124,12 +175,42 @@ function App() {
     const winnerName = score[0] >= 12 ? players[0]?.name : players[1]?.name;
 
     if (!gameStarted) {
+        if (isOnline) {
+             return (
+                <div className="game-container" style={{ textAlign: 'center', height: '300px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <h1>Online Multiplayer</h1>
+                    <div style={{ marginBottom: '10px' }}>
+                        <input
+                            type="text"
+                            placeholder="Server URL (e.g. http://192.168.1.5:3001)"
+                            value={serverUrl}
+                            onChange={(e) => setServerUrl(e.target.value)}
+                            style={{ padding: '10px', width: '250px', fontSize: '16px' }}
+                        />
+                    </div>
+                    <div style={{ marginBottom: '20px' }}>
+                        <input
+                            type="text"
+                            placeholder="Enter Room ID (e.g. room1)"
+                            value={roomId}
+                            onChange={(e) => setRoomId(e.target.value)}
+                            style={{ padding: '10px', width: '250px', fontSize: '16px' }}
+                        />
+                    </div>
+                    <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
+                        <button onClick={connectOnline} disabled={!roomId || !serverUrl}>Join Room</button>
+                        <button onClick={() => setIsOnline(false)}>Back</button>
+                    </div>
+                </div>
+             );
+        }
         return (
             <div className="game-container" style={{ textAlign: 'center', height: '300px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <h1>Truco Web</h1>
                 <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
                     <button onClick={() => startGame('bot')}>Play vs Bot</button>
                     <button onClick={() => startGame('local')}>Local Multiplayer</button>
+                    <button onClick={() => startGame('online')}>Online (Alpha)</button>
                 </div>
             </div>
         );
@@ -155,7 +236,12 @@ function App() {
 
     const bottomPlayer = players[0];
     const topPlayer = players[1];
-    const showTopCards = gameMode === 'local';
+    const showTopCards = gameMode === 'local' || gameMode === 'online'; // Show opponents in online too? Usually hidden.
+    // In online, we only receive our own hand usually via state, or we filter.
+    // The server state sends ALL players. We should ideally only show OUR hand at bottom.
+    // But for Alpha, showing both is fine or we need to identify 'me'.
+    // Since we don't have 'myPlayerIndex' stored, we might see everything.
+    // Let's stick to showing simple state.
 
     return (
         <div className="game-container">
@@ -170,7 +256,7 @@ function App() {
 
                 {/* Score Board (Center) */}
                 <div className="score-board" style={{ flexGrow: 1 }}>
-                    <h2>Truco Web ({gameMode === 'bot' ? 'Vs Bot' : 'Local'})</h2>
+                    <h2>Truco Web ({gameMode === 'bot' ? 'Vs Bot' : (gameMode === 'online' ? 'Online' : 'Local')})</h2>
                     <div>{players[0]?.name}: {score[0]} | {players[1]?.name}: {score[1]}</div>
                     <div>Truco Value: {trucoVal}</div>
                 </div>
