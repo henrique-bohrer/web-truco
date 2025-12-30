@@ -10,10 +10,13 @@ body {
 
 .game-container {
     width: 100%;
-    max-width: 800px;
+    max-width: 1200px; /* Increased max width for desktop */
+    min-height: 90vh; /* Use viewport height */
     background: rgba(0,0,0,0.2);
     padding: 20px;
     border-radius: 10px;
+    display: flex;
+    flex-direction: column;
 }
 
 .header {
@@ -43,8 +46,18 @@ body {
     font-family: monospace;
 }
 
+.game-board {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    flex-grow: 1; /* Take remaining space */
+    padding: 20px 0;
+    position: relative;
+    min-height: 600px; /* Base height for the board */
+}
+
 .table-area {
-    min-height: 160px;
+    min-height: 200px;
     border: 2px dashed rgba(255,255,255,0.3);
     border-radius: 10px;
     margin-bottom: 20px;
@@ -52,6 +65,72 @@ body {
     justify-content: center;
     align-items: center;
     gap: 20px;
+    position: relative;
+    flex-grow: 1; /* Allow table area to expand */
+}
+
+.player-area {
+    display: flex;
+    justify-content: center;
+    position: relative;
+    height: 180px; /* Reserved height for fanned cards */
+}
+
+.player-name {
+    position: absolute;
+    color: white;
+    font-weight: bold;
+    z-index: 100;
+}
+
+.top-player .player-name {
+    top: 0;
+}
+
+.bottom-player .player-name {
+    bottom: 0;
+}
+
+/* Hand Container for the "Fan" effect */
+.hand-container {
+    position: relative;
+    width: 300px; /* Base width for the fan spread */
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.hand-card-wrapper {
+    position: absolute;
+    /* transform-origin is key for the arc */
+    transform-origin: 50% 250%; /* Pivot point far below the card */
+    bottom: 10px; /* Align to bottom of container */
+    transition: transform 0.3s ease-out;
+}
+
+/* Specifics for top hand (inverted fan optional, or just same) */
+.hand-top .hand-card-wrapper {
+    top: 10px;
+    bottom: auto;
+    transform-origin: 50% -150%; /* Pivot point far above */
+}
+
+/* Ensure hovered cards pop up nicely */
+.hand-card-wrapper:hover {
+    z-index: 100 !important; /* Bring to front on hover */
+    /* We need to maintain the rotation but translate Y */
+    /* Since the rotation is applied inline, we can't easily override just the translate
+       without complex CSS variables or JS.
+       However, the Card component itself handles hover effects (scale/translateY).
+       But if the wrapper rotates, the card's internal Y translation works relative to that rotation.
+    */
+}
+
+/* Adjust Card hover to work well within the fan */
+.hand-container .card:hover {
+    transform: translateY(-20px) scale(1.1);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.5);
 }
 
 .controls {
