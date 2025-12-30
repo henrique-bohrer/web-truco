@@ -65,7 +65,10 @@ export class Bot extends Player {
         // Play lowest card? Or Highest?
         // Let's play a medium card or lowest non-manilha to probe.
         // For simplicity: Play lowest.
-        return sortedHand[0].index;
+        if (sortedHand.length > 0) {
+            return sortedHand[0].index;
+        }
+        return -1;
     }
 
     shouldAcceptTruco(gameState: GameStateView): boolean {

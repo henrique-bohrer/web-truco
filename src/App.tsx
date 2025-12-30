@@ -138,12 +138,12 @@ function App() {
     return (
         <div className="game-container">
             <div className="header">
-                 {/* Vira (Left Side) */}
-                 <div className="vira-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginRight: '10px' }}>
-                     <h3>Vira</h3>
-                     {vira && (
-                         <Card card={{ rank: vira, suit: '♦️' } as any} size="small" />
-                     )}
+                {/* Vira (Left Side) */}
+                <div className="vira-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginRight: '10px' }}>
+                    <h3>Vira</h3>
+                    {vira && (
+                        <Card card={{ rank: vira, suit: '♦️' } as any} size="small" />
+                    )}
                 </div>
 
                 {/* Score Board (Center) */}
@@ -153,7 +153,7 @@ function App() {
                     <div>Truco Value: {trucoVal}</div>
                 </div>
 
-                 {/* Back Button (Right Side) */}
+                {/* Back Button (Right Side) */}
                 <button onClick={resetGame} style={{ fontSize: '12px', padding: '5px 10px', marginLeft: '10px', height: 'fit-content', alignSelf: 'center' }}>
                     Menu
                 </button>
@@ -164,7 +164,7 @@ function App() {
 
                 {/* Top Hand (Player 2 or Bot) */}
                 <div className="player-area top-player">
-                    <div className="player-name" style={{position: 'absolute', top: '10px', left: '10px', color: 'white', zIndex: 20}}>{topPlayer?.name}</div>
+                    <div className="player-name">{topPlayer?.name}</div>
                     {topPlayer && (
                         <Hand
                             cards={topPlayer.hand}
@@ -185,22 +185,22 @@ function App() {
                     {tableCards.length === 0 && <div style={{ color: 'white', opacity: 0.5 }}>Table Empty</div>}
                     <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
                         {tableCards.map((item, i) => {
-                             let animClass = '';
-                             // Map Index 0 to Bottom, 1 to Top
-                             if (item.playerIndex === 0) {
-                                 animClass = 'anim-bottom';
-                             } else {
-                                 animClass = 'anim-top';
-                             }
+                            let animClass = '';
+                            // Map Index 0 to Bottom, 1 to Top
+                            if (item.playerIndex === 0) {
+                                animClass = 'anim-bottom';
+                            } else {
+                                animClass = 'anim-top';
+                            }
 
-                             return (
+                            return (
                                 <div key={i} className={`played-card ${animClass}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                                     <Card card={item.card} />
                                     <span style={{ color: 'white', marginTop: '5px', fontSize: '12px' }}>
                                         {players[item.playerIndex]?.name || `P${item.playerIndex}`}
                                     </span>
                                 </div>
-                             );
+                            );
                         })}
                     </div>
 
@@ -242,7 +242,7 @@ function App() {
                             </button>
                         )}
 
-                         {/* Fold Button */}
+                        {/* Fold Button */}
                         {prompt?.includes("'d' to Fold") && (
                             <button className="fold-btn" onClick={() => handleInput('d')}>
                                 Desistir (Fold)
