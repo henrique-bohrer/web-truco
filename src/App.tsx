@@ -182,7 +182,7 @@ function App() {
 
                 {/* Table Area (Middle) */}
                 <div className="table-area">
-                    {tableCards.length === 0 && <div style={{ color: 'white', opacity: 0.5 }}>Table Empty</div>}
+                    {tableCards.length === 0 && <div style={{ color: 'white', opacity: 0.5, padding: '2rem' }}>Table Empty</div>}
                     <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
                         {tableCards.map((item, i) => {
                              let animClass = '';
