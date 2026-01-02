@@ -57,16 +57,22 @@ function App() {
         }
     };
 
-    const connectOnline = () => {
+    const connectOnline = (overrideRoomId?: string) => {
+        const targetRoomId = overrideRoomId || roomId;
         const newSocket = io(serverUrl);
         socketRef.current = newSocket;
 
         newSocket.on('connect', () => {
-            newSocket.emit('join-room', { roomId, nickname });
+            newSocket.emit('join-room', { roomId: targetRoomId, nickname });
         });
 
         newSocket.on('log', (msg: string) => {
             setLogs(prev => [...prev, msg]);
+        });
+
+        newSocket.on('opponent-disconnected', () => {
+            alert('Opponent disconnected! Game Over.');
+            resetGame();
         });
 
         newSocket.on('ask', (question: string) => {
@@ -88,7 +94,6 @@ function App() {
              setVira(state.vira);
              setTrucoVal(state.trucoVal);
              setMaoIndex(state.maoIndex);
-             // Cannot deduce active player easily without more info, but prompt handles interaction
         });
 
         setGameStarted(true);
@@ -175,6 +180,28 @@ function App() {
     const gameOver = score[0] >= 12 || score[1] >= 12;
     const winnerName = score[0] >= 12 ? players[0]?.name : players[1]?.name;
 
+    // Waiting Room UI
+    if (gameStarted && isOnline && players.length < 2) {
+        return (
+            <div className="game-container" style={{ textAlign: 'center', height: '350px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <h1>Waiting for Opponent...</h1>
+                <div style={{ margin: '20px 0' }}>
+                    <p>Share this Room ID with your friend:</p>
+                    <div style={{ fontSize: '24px', fontWeight: 'bold', letterSpacing: '2px', margin: '10px 0', userSelect: 'all' }}>
+                        {roomId}
+                    </div>
+                </div>
+                <div style={{ marginTop: '20px' }}>
+                    <p>Log:</p>
+                    <div style={{ fontSize: '12px', color: '#ccc' }}>
+                        {logs[logs.length - 1]}
+                    </div>
+                </div>
+                <button onClick={resetGame} style={{ marginTop: '30px' }}>Cancel</button>
+            </div>
+        );
+    }
+
     if (!gameStarted) {
         if (isOnline) {
              return (
@@ -208,43 +235,13 @@ function App() {
                                 onChange={(e) => setRoomId(e.target.value)}
                                 style={{ padding: '10px', width: '150px', fontSize: '16px' }}
                             />
-                            <button onClick={connectOnline} disabled={!roomId || !serverUrl || !nickname}>Join</button>
+                            <button onClick={() => connectOnline()} disabled={!roomId || !serverUrl || !nickname}>Join</button>
                         </div>
                         <div style={{fontSize: '14px', margin: '5px 0'}}>OR</div>
                         <button onClick={() => {
                             const newRoomId = Math.random().toString(36).substring(2, 7).toUpperCase();
                             setRoomId(newRoomId);
-                            // Need to defer connection until state updates, but simple way is to force it or reuse connectOnline
-                            // React state update is async.
-                            // Let's just set ID and auto-connect in effect? No, simpler:
-                            // We can't easily call connectOnline with new ID immediately unless we pass it.
-                            // Let's just set the ID and let user click 'Create' which is actually Join with new ID.
-                            // Better: "Create Room" button calls connect with new ID.
-                            const socket = io(serverUrl);
-                            socketRef.current = socket;
-                            socket.on('connect', () => {
-                                socket.emit('join-room', { roomId: newRoomId, nickname });
-                            });
-                            // ... setup other listeners (duplicated code, should refactor)
-                            // Refactor connectOnline to accept optional ID
-
-                            socket.on('log', (msg: string) => setLogs(p => [...p, msg]));
-                            socket.on('ask', (q: string) => {
-                                setPrompt(q);
-                                setWaitingForInput(true);
-                                resolveInputRef.current = (a) => socket.emit('answer', a);
-                            });
-                            socket.on('update-state', () => socket.emit('request-state'));
-                            socket.on('state-update', (s: any) => {
-                                setPlayers(s.players);
-                                setTableCards(s.tableCards);
-                                setScore(s.score);
-                                setVira(s.vira);
-                                setTrucoVal(s.trucoVal);
-                                setMaoIndex(s.maoIndex);
-                            });
-                            setGameStarted(true);
-
+                            connectOnline(newRoomId);
                         }} disabled={!serverUrl || !nickname}>Create New Room</button>
                     </div>
                     <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
@@ -285,12 +282,6 @@ function App() {
 
     const bottomPlayer = players[0];
     const topPlayer = players[1];
-    const showTopCards = gameMode === 'local' || gameMode === 'online'; // Show opponents in online too? Usually hidden.
-    // In online, we only receive our own hand usually via state, or we filter.
-    // The server state sends ALL players. We should ideally only show OUR hand at bottom.
-    // But for Alpha, showing both is fine or we need to identify 'me'.
-    // Since we don't have 'myPlayerIndex' stored, we might see everything.
-    // Let's stick to showing simple state.
 
     return (
         <div className="game-container">
@@ -326,7 +317,7 @@ function App() {
                         <Hand
                             cards={topPlayer.hand}
                             position="top"
-                            hidden={!showTopCards}
+                            hidden={gameMode !== 'local'}
                             onCardClick={(i) => {
                                 if (gameMode === 'local' && activePlayerIdx === 1 && waitingForInput && prompt?.includes("Choose card")) {
                                     handleInput(i.toString());

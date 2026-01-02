@@ -97,16 +97,28 @@ io.on('connection', (socket) => {
                 room.game = game;
                 logger.log(`Game Starting! ${p1.name} vs ${p2.name}`);
 
-                // We need to sync state to clients initially and periodically
-                // MatchController does not expose state stream easily, relying on 'getters'.
-                // Clients need to request sync? Or we push?
-                // RoomLogger emits 'update-state'. Clients should request sync via socket event?
-                // Ideally we push the state JSON.
-
                 game.startMatch().catch(e => console.error(e));
             }
         } else {
             socket.emit('log', 'Room full.');
+        }
+    });
+
+    socket.on('disconnect', () => {
+        // Find if user was in a room
+        for (const [id, room] of rooms) {
+            const playerIndex = room.players.findIndex(p => p.socket === socket);
+            if (playerIndex !== -1) {
+                // Notify other player
+                const otherPlayer = room.players.find(p => p.socket !== socket);
+                if (otherPlayer) {
+                    otherPlayer.socket.emit('log', 'Opponent disconnected. Game Over.');
+                    otherPlayer.socket.emit('opponent-disconnected');
+                }
+                // Cleanup room
+                rooms.delete(id);
+                break;
+            }
         }
     });
 
@@ -117,9 +129,21 @@ io.on('connection', (socket) => {
             if (room.players.some(p => p.socket === socket) && room.game) {
                 // Construct state
                 const players = room.game.getPlayers();
-                // Filter hands? For now send all, client hides. Secure version would filter.
+
+                // Identify which player is requesting to verify "me" vs "opponent"
+                // But simplified: we send the full state, and client logic handles masking hands.
+                // NOTE: For security, we SHOULD mask opponent hand here.
+
+                const requesterIndex = room.players.findIndex(p => p.socket === socket);
+                // The game player order matches room.players order usually (p1, p2 added sequentially)
+
                 const state = {
-                    players: players,
+                    players: players.map((p, idx) => ({
+                        name: p.name,
+                        // Only show hand if it belongs to requester
+                        hand: idx === requesterIndex ? p.hand : p.hand.map(() => null), // Send nulls or empty for opponent
+                        type: p.type
+                    })),
                     tableCards: room.game.currentRoundCards,
                     score: room.game.getScore(),
                     vira: room.game.getVira(),
