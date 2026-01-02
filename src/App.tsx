@@ -12,6 +12,7 @@ function App() {
     const [gameStarted, setGameStarted] = useState(false);
     const [gameMode, setGameMode] = useState<'bot' | 'local' | 'online'>('bot');
     const [roomId, setRoomId] = useState<string>('');
+    const [nickname, setNickname] = useState<string>('');
     const [serverUrl, setServerUrl] = useState<string>('http://localhost:3001');
     const [isOnline, setIsOnline] = useState(false);
 
@@ -56,16 +57,22 @@ function App() {
         }
     };
 
-    const connectOnline = () => {
+    const connectOnline = (overrideRoomId?: string) => {
+        const targetRoomId = overrideRoomId || roomId;
         const newSocket = io(serverUrl);
         socketRef.current = newSocket;
 
         newSocket.on('connect', () => {
-            newSocket.emit('join-room', roomId);
+            newSocket.emit('join-room', { roomId: targetRoomId, nickname });
         });
 
         newSocket.on('log', (msg: string) => {
             setLogs(prev => [...prev, msg]);
+        });
+
+        newSocket.on('opponent-disconnected', () => {
+            alert('Opponent disconnected! Game Over.');
+            resetGame();
         });
 
         newSocket.on('ask', (question: string) => {
@@ -87,7 +94,6 @@ function App() {
              setVira(state.vira);
              setTrucoVal(state.trucoVal);
              setMaoIndex(state.maoIndex);
-             // Cannot deduce active player easily without more info, but prompt handles interaction
         });
 
         setGameStarted(true);
@@ -174,11 +180,42 @@ function App() {
     const gameOver = score[0] >= 12 || score[1] >= 12;
     const winnerName = score[0] >= 12 ? players[0]?.name : players[1]?.name;
 
+    // Waiting Room UI
+    if (gameStarted && isOnline && players.length < 2) {
+        return (
+            <div className="game-container" style={{ textAlign: 'center', height: '350px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <h1>Waiting for Opponent...</h1>
+                <div style={{ margin: '20px 0' }}>
+                    <p>Share this Room ID with your friend:</p>
+                    <div style={{ fontSize: '24px', fontWeight: 'bold', letterSpacing: '2px', margin: '10px 0', userSelect: 'all' }}>
+                        {roomId}
+                    </div>
+                </div>
+                <div style={{ marginTop: '20px' }}>
+                    <p>Log:</p>
+                    <div style={{ fontSize: '12px', color: '#ccc' }}>
+                        {logs[logs.length - 1]}
+                    </div>
+                </div>
+                <button onClick={resetGame} style={{ marginTop: '30px' }}>Cancel</button>
+            </div>
+        );
+    }
+
     if (!gameStarted) {
         if (isOnline) {
              return (
-                <div className="game-container" style={{ textAlign: 'center', height: '300px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <div className="game-container" style={{ textAlign: 'center', height: '350px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                     <h1>Online Multiplayer</h1>
+                    <div style={{ marginBottom: '10px' }}>
+                        <input
+                            type="text"
+                            placeholder="Nickname"
+                            value={nickname}
+                            onChange={(e) => setNickname(e.target.value)}
+                            style={{ padding: '10px', width: '250px', fontSize: '16px' }}
+                        />
+                    </div>
                     <div style={{ marginBottom: '10px' }}>
                         <input
                             type="text"
@@ -188,17 +225,26 @@ function App() {
                             style={{ padding: '10px', width: '250px', fontSize: '16px' }}
                         />
                     </div>
-                    <div style={{ marginBottom: '20px' }}>
-                        <input
-                            type="text"
-                            placeholder="Enter Room ID (e.g. room1)"
-                            value={roomId}
-                            onChange={(e) => setRoomId(e.target.value)}
-                            style={{ padding: '10px', width: '250px', fontSize: '16px' }}
-                        />
+                    <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                        <div style={{fontSize: '14px', marginBottom: '5px'}}>Join Existing Room:</div>
+                        <div style={{display: 'flex', gap: '5px'}}>
+                            <input
+                                type="text"
+                                placeholder="Room ID"
+                                value={roomId}
+                                onChange={(e) => setRoomId(e.target.value)}
+                                style={{ padding: '10px', width: '150px', fontSize: '16px' }}
+                            />
+                            <button onClick={() => connectOnline()} disabled={!roomId || !serverUrl || !nickname}>Join</button>
+                        </div>
+                        <div style={{fontSize: '14px', margin: '5px 0'}}>OR</div>
+                        <button onClick={() => {
+                            const newRoomId = Math.random().toString(36).substring(2, 7).toUpperCase();
+                            setRoomId(newRoomId);
+                            connectOnline(newRoomId);
+                        }} disabled={!serverUrl || !nickname}>Create New Room</button>
                     </div>
                     <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
-                        <button onClick={connectOnline} disabled={!roomId || !serverUrl}>Join Room</button>
                         <button onClick={() => setIsOnline(false)}>Back</button>
                     </div>
                 </div>
@@ -236,12 +282,6 @@ function App() {
 
     const bottomPlayer = players[0];
     const topPlayer = players[1];
-    const showTopCards = gameMode === 'local' || gameMode === 'online'; // Show opponents in online too? Usually hidden.
-    // In online, we only receive our own hand usually via state, or we filter.
-    // The server state sends ALL players. We should ideally only show OUR hand at bottom.
-    // But for Alpha, showing both is fine or we need to identify 'me'.
-    // Since we don't have 'myPlayerIndex' stored, we might see everything.
-    // Let's stick to showing simple state.
 
     return (
         <div className="game-container">
@@ -277,7 +317,7 @@ function App() {
                         <Hand
                             cards={topPlayer.hand}
                             position="top"
-                            hidden={!showTopCards}
+                            hidden={gameMode !== 'local'}
                             onCardClick={(i) => {
                                 if (gameMode === 'local' && activePlayerIdx === 1 && waitingForInput && prompt?.includes("Choose card")) {
                                     handleInput(i.toString());
