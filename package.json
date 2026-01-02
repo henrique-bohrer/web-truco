@@ -8,7 +8,7 @@
     "dev": "concurrently -k \"npm run start:server\" \"vite\"",
     "build": "vite build",
     "preview": "vite preview",
-    "start:server": "ts-node --compiler-options '{\"module\":\"commonjs\"}' src/server.ts"
+    "start:server": "ts-node --compiler-options \"{\\\"module\\\":\\\"commonjs\\\"}\" src/server.ts"
   },
   "repository": {
     "type": "git",
