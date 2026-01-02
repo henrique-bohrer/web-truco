@@ -62,7 +62,11 @@ function App() {
         const targetRoomId = overrideRoomId || roomId;
         setConnectionError(null);
 
-        const newSocket = io(serverUrl);
+        const newSocket = io(serverUrl, {
+            reconnection: true,
+            reconnectionAttempts: 20,
+            reconnectionDelay: 1000,
+        });
         socketRef.current = newSocket;
 
         newSocket.on('connect', () => {
