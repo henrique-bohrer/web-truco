@@ -15,6 +15,7 @@ function App() {
     const [nickname, setNickname] = useState<string>('');
     const [serverUrl, setServerUrl] = useState<string>('http://localhost:3001');
     const [isOnline, setIsOnline] = useState(false);
+    const [connectionError, setConnectionError] = useState<string | null>(null);
 
     const [logs, setLogs] = useState<string[]>([]);
     const [waitingForInput, setWaitingForInput] = useState(false);
@@ -28,7 +29,7 @@ function App() {
     const [trucoVal, setTrucoVal] = useState<number>(1);
     const [maoIndex, setMaoIndex] = useState<number>(0);
     const [activePlayerIdx, setActivePlayerIdx] = useState<number>(0);
-    const [updateTrigger, setUpdateTrigger] = useState(0);
+    const [myPlayerIndex, setMyPlayerIndex] = useState<number>(0); // Default to 0 (Host/P1)
 
     const resolveInputRef = useRef<((answer: string) => void) | null>(null);
     const gameRef = useRef<MatchController | null>(null);
@@ -59,11 +60,25 @@ function App() {
 
     const connectOnline = (overrideRoomId?: string) => {
         const targetRoomId = overrideRoomId || roomId;
+        setConnectionError(null);
+
         const newSocket = io(serverUrl);
         socketRef.current = newSocket;
 
         newSocket.on('connect', () => {
+            setConnectionError(null);
             newSocket.emit('join-room', { roomId: targetRoomId, nickname });
+        });
+
+        newSocket.on('game-start', (data: { myIndex: number }) => {
+            setMyPlayerIndex(data.myIndex);
+        });
+
+        newSocket.on('connect_error', (err) => {
+            console.error("Connection Error:", err);
+            setConnectionError(`Could not connect to server at ${serverUrl}. Is it running?`);
+            // Optional: disconnect to prevent infinite retries spamming console if desired,
+            // but socket.io auto-retries which is good.
         });
 
         newSocket.on('log', (msg: string) => {
@@ -184,6 +199,12 @@ function App() {
     if (gameStarted && isOnline && players.length < 2) {
         return (
             <div className="game-container" style={{ textAlign: 'center', height: '350px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                {connectionError && (
+                    <div style={{ background: '#ff4444', color: 'white', padding: '10px', marginBottom: '20px', borderRadius: '5px' }}>
+                        {connectionError}
+                        <div style={{ fontSize: '12px', marginTop: '5px' }}>Run <code>npm run start:server</code> in a separate terminal.</div>
+                    </div>
+                )}
                 <h1>Waiting for Opponent...</h1>
                 <div style={{ margin: '20px 0' }}>
                     <p>Share this Room ID with your friend:</p>
@@ -280,8 +301,21 @@ function App() {
          );
     }
 
-    const bottomPlayer = players[0];
-    const topPlayer = players[1];
+    // Determine view perspective based on mode
+    let bottomPlayer = players[0];
+    let topPlayer = players[1];
+
+    if (gameMode === 'online') {
+        // In online mode, I am always bottom
+        // If my index is 1, then players[1] is me (bottom), players[0] is opponent (top)
+        if (myPlayerIndex === 1) {
+            bottomPlayer = players[1];
+            topPlayer = players[0];
+        } else {
+            bottomPlayer = players[0];
+            topPlayer = players[1];
+        }
+    }
 
     return (
         <div className="game-container">
@@ -319,6 +353,7 @@ function App() {
                             position="top"
                             hidden={gameMode !== 'local'}
                             onCardClick={(i) => {
+                                // In local mode, P2 is top. In online mode, top is opponent (no click).
                                 if (gameMode === 'local' && activePlayerIdx === 1 && waitingForInput && prompt?.includes("Choose card")) {
                                     handleInput(i.toString());
                                 }
@@ -334,8 +369,12 @@ function App() {
                     <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
                         {tableCards.map((item, i) => {
                              let animClass = '';
-                             // Map Index 0 to Bottom, 1 to Top
-                             if (item.playerIndex === 0) {
+
+                             // Determine animation direction relative to ME
+                             // If item.playerIndex === myPlayerIndex (or 0 in local), it comes from bottom
+                             const isMe = (gameMode === 'online') ? (item.playerIndex === myPlayerIndex) : (item.playerIndex === 0);
+
+                             if (isMe) {
                                  animClass = 'anim-bottom';
                              } else {
                                  animClass = 'anim-top';
@@ -369,11 +408,13 @@ function App() {
                             cards={bottomPlayer.hand}
                             position="bottom"
                             onCardClick={(i) => {
-                                if (activePlayerIdx === 0 && waitingForInput && prompt?.includes("Choose card")) {
+                                // In online mode, I am bottom (myPlayerIndex), so activePlayerIdx must match myPlayerIndex
+                                const isMyTurn = (gameMode === 'online') ? (activePlayerIdx === myPlayerIndex) : (activePlayerIdx === 0);
+                                if (isMyTurn && waitingForInput && prompt?.includes("Choose card")) {
                                     handleInput(i.toString());
                                 }
                             }}
-                            disabled={!(activePlayerIdx === 0 && waitingForInput && prompt?.includes("Choose card"))}
+                            disabled={!((gameMode === 'online' ? activePlayerIdx === myPlayerIndex : activePlayerIdx === 0) && waitingForInput && prompt?.includes("Choose card"))}
                         />
                     )}
                 </div>

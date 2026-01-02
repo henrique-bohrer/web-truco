@@ -97,6 +97,10 @@ io.on('connection', (socket) => {
                 room.game = game;
                 logger.log(`Game Starting! ${p1.name} vs ${p2.name}`);
 
+                // Notify players of their index
+                p1Data.socket.emit('game-start', { myIndex: 0 });
+                p2Data.socket.emit('game-start', { myIndex: 1 });
+
                 game.startMatch().catch(e => console.error(e));
             }
         } else {
