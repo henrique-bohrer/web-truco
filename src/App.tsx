@@ -29,12 +29,12 @@ function App() {
     const [trucoVal, setTrucoVal] = useState<number>(1);
     const [maoIndex, setMaoIndex] = useState<number>(0);
     const [activePlayerIdx, setActivePlayerIdx] = useState<number>(0);
-    const [myPlayerIndex, setMyPlayerIndex] = useState<number>(0); // Default to 0 (Host/P1)
+    const [myPlayerIndex, setMyPlayerIndex] = useState<number>(0);
     const [, setUpdateTrigger] = useState(0);
 
     const resolveInputRef = useRef<((answer: string) => void) | null>(null);
     const gameRef = useRef<MatchController | null>(null);
-    const logEndRef = useRef<HTMLDivElement>(null);
+    const logEndRef = useRef<HTMLDivElement | null>(null);
     const socketRef = useRef<Socket | null>(null);
 
     const syncState = () => {
@@ -82,8 +82,6 @@ function App() {
         newSocket.on('connect_error', (err) => {
             console.error("Connection Error:", err);
             setConnectionError(`Could not connect to server at ${serverUrl}. Is it running?`);
-            // Optional: disconnect to prevent infinite retries spamming console if desired,
-            // but socket.io auto-retries which is good.
         });
 
         newSocket.on('log', (msg: string) => {
@@ -104,19 +102,22 @@ function App() {
         });
 
         newSocket.on('update-state', () => {
-             newSocket.emit('request-state');
+            newSocket.emit('request-state');
         });
 
         newSocket.on('state-update', (state: any) => {
-             if (typeof state.yourIndex === 'number') {
-                 setMyPlayerIndex(state.yourIndex);
-             }
-             setPlayers(state.players);
-             setTableCards(state.tableCards);
-             setScore(state.score);
-             setVira(state.vira);
-             setTrucoVal(state.trucoVal);
-             setMaoIndex(state.maoIndex);
+            if (typeof state.yourIndex === 'number') {
+                setMyPlayerIndex(state.yourIndex);
+            }
+            if (typeof state.activePlayerIdx === 'number') {
+                setActivePlayerIdx(state.activePlayerIdx);
+            }
+            setPlayers(state.players);
+            setTableCards(state.tableCards);
+            setScore(state.score);
+            setVira(state.vira);
+            setTrucoVal(state.trucoVal);
+            setMaoIndex(state.maoIndex);
         });
 
         setGameStarted(true);
@@ -177,7 +178,7 @@ function App() {
             }
 
             gameRef.current = game;
-            syncState(); // Initial sync
+            syncState();
 
             game.startMatch().catch(err => console.error(err));
         }
@@ -206,24 +207,42 @@ function App() {
     // Waiting Room UI
     if (gameStarted && isOnline && players.length < 2) {
         return (
-            <div className="game-container" style={{ textAlign: 'center', height: '350px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <div className="game-container" style={{ textAlign: 'center', minHeight: '350px', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '20px' }}>
                 {connectionError && (
-                    <div style={{ background: '#ff4444', color: 'white', padding: '10px', marginBottom: '20px', borderRadius: '5px' }}>
-                        {connectionError}
-                        <div style={{ fontSize: '12px', marginTop: '5px' }}>Run <code>npm run start:server</code> in a separate terminal.</div>
+                    <div style={{ background: '#ff4444', color: 'white', padding: '15px', marginBottom: '20px', borderRadius: '8px', maxWidth: '500px', margin: '0 auto 20px' }}>
+                        <strong>{connectionError}</strong>
+                        <div style={{ fontSize: '14px', marginTop: '8px' }}>Run <code style={{ background: 'rgba(0,0,0,0.2)', padding: '2px 6px', borderRadius: '3px' }}>npm run start:server</code> in a separate terminal.</div>
                     </div>
                 )}
-                <h1>Waiting for Opponent...</h1>
-                <div style={{ margin: '20px 0' }}>
-                    <p>Share this Room ID with your friend:</p>
-                    <div style={{ fontSize: '24px', fontWeight: 'bold', letterSpacing: '2px', margin: '10px 0', userSelect: 'all' }}>
+                <h1 style={{ marginBottom: '30px' }}>Waiting for Opponent...</h1>
+                <div style={{ margin: '20px auto', maxWidth: '400px' }}>
+                    <p style={{ marginBottom: '10px', fontSize: '16px' }}>Share this Room ID with your friend:</p>
+                    <div style={{
+                        fontSize: '32px',
+                        fontWeight: 'bold',
+                        letterSpacing: '4px',
+                        margin: '15px 0',
+                        userSelect: 'all',
+                        background: 'rgba(255,255,255,0.1)',
+                        padding: '15px',
+                        borderRadius: '10px',
+                        border: '2px dashed rgba(255,255,255,0.3)'
+                    }}>
                         {roomId}
                     </div>
                 </div>
-                <div style={{ marginTop: '20px' }}>
-                    <p>Log:</p>
-                    <div style={{ fontSize: '12px', color: '#ccc' }}>
-                        {logs[logs.length - 1]}
+                <div style={{ marginTop: '30px', fontSize: '14px', color: '#ccc', maxWidth: '400px', margin: '30px auto 0' }}>
+                    <p style={{ marginBottom: '5px' }}>Recent Activity:</p>
+                    <div style={{
+                        background: 'rgba(0,0,0,0.3)',
+                        padding: '10px',
+                        borderRadius: '5px',
+                        minHeight: '40px',
+                        fontFamily: 'monospace'
+                    }}>
+                        {logs.slice(-3).map((log, i) => (
+                            <div key={i}>{log}</div>
+                        ))}
                     </div>
                 </div>
                 <button onClick={resetGame} style={{ marginTop: '30px' }}>Cancel</button>
@@ -233,80 +252,139 @@ function App() {
 
     if (!gameStarted) {
         if (isOnline) {
-             return (
-                <div className="game-container" style={{ textAlign: 'center', height: '350px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    <h1>Online Multiplayer</h1>
-                    <div style={{ marginBottom: '10px' }}>
-                        <input
-                            type="text"
-                            placeholder="Nickname"
-                            value={nickname}
-                            onChange={(e) => setNickname(e.target.value)}
-                            style={{ padding: '10px', width: '250px', fontSize: '16px' }}
-                        />
-                    </div>
-                    <div style={{ marginBottom: '10px' }}>
-                        <input
-                            type="text"
-                            placeholder="Server URL (e.g. http://192.168.1.5:3001)"
-                            value={serverUrl}
-                            onChange={(e) => setServerUrl(e.target.value)}
-                            style={{ padding: '10px', width: '250px', fontSize: '16px' }}
-                        />
-                    </div>
-                    <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-                        <div style={{fontSize: '14px', marginBottom: '5px'}}>Join Existing Room:</div>
-                        <div style={{display: 'flex', gap: '5px'}}>
+            return (
+                <div className="game-container" style={{ textAlign: 'center', minHeight: '400px', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '20px' }}>
+                    <h1 style={{ marginBottom: '30px' }}>🎮 Online Multiplayer</h1>
+                    <div style={{ maxWidth: '400px', margin: '0 auto', width: '100%' }}>
+                        <div style={{ marginBottom: '15px' }}>
                             <input
                                 type="text"
-                                placeholder="Room ID"
-                                value={roomId}
-                                onChange={(e) => setRoomId(e.target.value)}
-                                style={{ padding: '10px', width: '150px', fontSize: '16px' }}
+                                placeholder="Your Nickname"
+                                value={nickname}
+                                onChange={(e) => setNickname(e.target.value)}
+                                style={{
+                                    padding: '12px 15px',
+                                    width: '100%',
+                                    fontSize: '16px',
+                                    borderRadius: '8px',
+                                    border: '2px solid rgba(255,255,255,0.2)',
+                                    background: 'rgba(255,255,255,0.1)',
+                                    color: 'white',
+                                    boxSizing: 'border-box'
+                                }}
                             />
-                            <button onClick={() => connectOnline()} disabled={!roomId || !serverUrl || !nickname}>Join</button>
                         </div>
-                        <div style={{fontSize: '14px', margin: '5px 0'}}>OR</div>
-                        <button onClick={() => {
-                            const newRoomId = Math.random().toString(36).substring(2, 7).toUpperCase();
-                            setRoomId(newRoomId);
-                            connectOnline(newRoomId);
-                        }} disabled={!serverUrl || !nickname}>Create New Room</button>
-                    </div>
-                    <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
-                        <button onClick={() => setIsOnline(false)}>Back</button>
+                        <div style={{ marginBottom: '20px' }}>
+                            <input
+                                type="text"
+                                placeholder="Server URL (e.g. http://192.168.1.5:3001)"
+                                value={serverUrl}
+                                onChange={(e) => setServerUrl(e.target.value)}
+                                style={{
+                                    padding: '12px 15px',
+                                    width: '100%',
+                                    fontSize: '14px',
+                                    borderRadius: '8px',
+                                    border: '2px solid rgba(255,255,255,0.2)',
+                                    background: 'rgba(255,255,255,0.1)',
+                                    color: 'white',
+                                    boxSizing: 'border-box'
+                                }}
+                            />
+                        </div>
+
+                        <div style={{
+                            background: 'rgba(0,0,0,0.2)',
+                            padding: '20px',
+                            borderRadius: '10px',
+                            marginBottom: '15px'
+                        }}>
+                            <div style={{ fontSize: '14px', marginBottom: '12px', fontWeight: 'bold' }}>Join Existing Room:</div>
+                            <div style={{ display: 'flex', gap: '8px', marginBottom: '15px' }}>
+                                <input
+                                    type="text"
+                                    placeholder="Room ID"
+                                    value={roomId}
+                                    onChange={(e) => setRoomId(e.target.value.toUpperCase())}
+                                    style={{
+                                        padding: '10px',
+                                        flex: 1,
+                                        fontSize: '16px',
+                                        borderRadius: '6px',
+                                        border: '2px solid rgba(255,255,255,0.2)',
+                                        background: 'rgba(255,255,255,0.15)',
+                                        color: 'white',
+                                        textAlign: 'center',
+                                        letterSpacing: '2px'
+                                    }}
+                                />
+                                <button
+                                    onClick={() => connectOnline()}
+                                    disabled={!roomId || !serverUrl || !nickname}
+                                    style={{ padding: '10px 20px' }}
+                                >
+                                    Join
+                                </button>
+                            </div>
+
+                            <div style={{
+                                fontSize: '14px',
+                                margin: '15px 0',
+                                color: 'rgba(255,255,255,0.6)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px'
+                            }}>
+                                <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.2)' }}></div>
+                                OR
+                                <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.2)' }}></div>
+                            </div>
+
+                            <button
+                                onClick={() => {
+                                    const newRoomId = Math.random().toString(36).substring(2, 7).toUpperCase();
+                                    setRoomId(newRoomId);
+                                    connectOnline(newRoomId);
+                                }}
+                                disabled={!serverUrl || !nickname}
+                                style={{ width: '100%' }}
+                            >
+                                🎲 Create New Room
+                            </button>
+                        </div>
+
+                        <button onClick={() => setIsOnline(false)} style={{ width: '100%' }}>← Back to Menu</button>
                     </div>
                 </div>
-             );
+            );
         }
         return (
-            <div className="game-container" style={{ textAlign: 'center', height: '300px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                <h1>Truco Web</h1>
-                <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
-                    <button onClick={() => startGame('bot')}>Play vs Bot</button>
-                    <button onClick={() => startGame('local')}>Local Multiplayer</button>
-                    <button onClick={() => startGame('online')}>Online (Alpha)</button>
+            <div className="game-container" style={{ textAlign: 'center', minHeight: '350px', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '20px' }}>
+                <h1 style={{ marginBottom: '40px', fontSize: '3rem' }}>🃏 Truco Paulista</h1>
+                <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', flexWrap: 'wrap', maxWidth: '600px', margin: '0 auto' }}>
+                    <button onClick={() => startGame('bot')} style={{ minWidth: '150px' }}>🤖 Play vs Bot</button>
+                    <button onClick={() => startGame('local')} style={{ minWidth: '150px' }}>👥 Local 2P</button>
+                    <button onClick={() => startGame('online')} style={{ minWidth: '150px' }}>🌐 Online (Alpha)</button>
                 </div>
             </div>
         );
     }
 
     if (gameOver) {
-         return (
-             <div className="game-container" style={{ textAlign: 'center', height: '300px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                 <h1>Game Over!</h1>
-                 <h2>Winner: {winnerName}</h2>
-                 <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', marginTop: '20px' }}>
-                     <button onClick={() => {
-                         // Full reset then restart same mode
-                         const mode = gameMode;
-                         resetGame();
-                         setTimeout(() => startGame(mode), 100);
-                     }}>Play Again</button>
-                     <button onClick={resetGame}>Menu</button>
-                 </div>
-             </div>
-         );
+        return (
+            <div className="game-container" style={{ textAlign: 'center', minHeight: '350px', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '20px' }}>
+                <h1 style={{ fontSize: '3rem', marginBottom: '20px' }}>🏆 Game Over!</h1>
+                <h2 style={{ fontSize: '2rem', marginBottom: '30px' }}>Winner: <span style={{ color: '#ffd700' }}>{winnerName}</span></h2>
+                <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', marginTop: '20px', flexWrap: 'wrap' }}>
+                    <button onClick={() => {
+                        const mode = gameMode;
+                        resetGame();
+                        setTimeout(() => startGame(mode), 100);
+                    }}>🔄 Play Again</button>
+                    <button onClick={resetGame}>📋 Back to Menu</button>
+                </div>
+            </div>
+        );
     }
 
     // Determine view perspective based on mode
@@ -314,8 +392,6 @@ function App() {
     let topPlayer = players[1];
 
     if (gameMode === 'online') {
-        // In online mode, I am always bottom
-        // If my index is 1, then players[1] is me (bottom), players[0] is opponent (top)
         if (myPlayerIndex === 1) {
             bottomPlayer = players[1];
             topPlayer = players[0];
@@ -325,144 +401,130 @@ function App() {
         }
     }
 
+    // FIX CRÍTICO: Condição corrigida para habilitar cliques
+    const isMyTurnBottom = gameMode === 'online'
+        ? activePlayerIdx === myPlayerIndex
+        : activePlayerIdx === 0;
+
+    const isMyTurnTop = gameMode === 'local' && activePlayerIdx === 1;
+
     return (
         <div className="game-container">
             <div className="header">
-                 {/* Vira (Left Side) */}
-                 <div className="vira-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginRight: '10px' }}>
-                     <h3>Vira</h3>
-                     {vira && (
-                         <Card card={{ rank: vira, suit: '♦️' } as any} size="small" />
-                     )}
+                <div className="vira-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginRight: '10px' }}>
+                    <h3>Vira</h3>
+                    {vira && (
+                        <Card card={{ rank: vira, suit: '♦️' } as any} size="small" />
+                    )}
                 </div>
 
-                {/* Score Board (Center) */}
                 <div className="score-board" style={{ flexGrow: 1 }}>
-                    <h2>Truco Web ({gameMode === 'bot' ? 'Vs Bot' : (gameMode === 'online' ? 'Online' : 'Local')})</h2>
+                    <h2>Truco Paulista {gameMode === 'bot' ? '(vs Bot)' : (gameMode === 'online' ? '(Online)' : '(Local)')}</h2>
                     <div>{players[0]?.name}: {score[0]} | {players[1]?.name}: {score[1]}</div>
                     <div>Truco Value: {trucoVal}</div>
                 </div>
 
-                 {/* Back Button (Right Side) */}
-                <button onClick={resetGame} style={{ fontSize: '12px', padding: '5px 10px', marginLeft: '10px', height: 'fit-content', alignSelf: 'center' }}>
-                    Menu
+                <button onClick={resetGame} style={{ fontSize: '12px', padding: '8px 15px', marginLeft: '10px', height: 'fit-content', alignSelf: 'center' }}>
+                    📋 Menu
                 </button>
             </div>
 
-            {/* Game Board */}
             <div className="game-board">
-
-                {/* Top Hand (Player 2 or Bot) */}
                 <div className="player-area top-player">
-                    <div className="player-name" style={{position: 'absolute', top: '10px', left: '10px', color: 'white', zIndex: 20}}>{topPlayer?.name}</div>
+                    <div className="player-name" style={{ position: 'absolute', top: '10px', left: '10px', color: 'white', zIndex: 20 }}>
+                        {topPlayer?.name}
+                    </div>
                     {topPlayer && (
                         <Hand
                             cards={topPlayer.hand}
                             position="top"
                             hidden={gameMode !== 'local'}
                             onCardClick={(i) => {
-                                // In local mode, P2 is top. In online mode, top is opponent (no click).
-                                if (gameMode === 'local' && activePlayerIdx === 1 && waitingForInput && prompt?.includes("Choose card")) {
+                                if (isMyTurnTop && waitingForInput && prompt?.includes("Choose card")) {
                                     handleInput(i.toString());
                                 }
                             }}
-                            disabled={!(gameMode === 'local' && activePlayerIdx === 1 && waitingForInput)}
+                            disabled={!(isMyTurnTop && waitingForInput)}
                         />
                     )}
                 </div>
 
-                {/* Table Area (Middle) */}
                 <div className="table-area">
-                    {tableCards.length === 0 && <div style={{ color: 'white', opacity: 0.5, padding: '2rem' }}>Table Empty</div>}
+                    {tableCards.length === 0 && <div style={{ color: 'white', opacity: 0.5, padding: '2rem' }}>Waiting for cards...</div>}
                     <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
                         {tableCards.map((item, i) => {
-                             let animClass = '';
+                            const isMe = (gameMode === 'online') ? (item.playerIndex === myPlayerIndex) : (item.playerIndex === 0);
+                            const animClass = isMe ? 'anim-bottom' : 'anim-top';
 
-                             // Determine animation direction relative to ME
-                             // If item.playerIndex === myPlayerIndex (or 0 in local), it comes from bottom
-                             const isMe = (gameMode === 'online') ? (item.playerIndex === myPlayerIndex) : (item.playerIndex === 0);
-
-                             if (isMe) {
-                                 animClass = 'anim-bottom';
-                             } else {
-                                 animClass = 'anim-top';
-                             }
-
-                             return (
+                            return (
                                 <div key={i} className={`played-card ${animClass}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                                     <Card card={item.card} />
-                                    <span style={{ color: 'white', marginTop: '5px', fontSize: '12px' }}>
+                                    <span style={{ color: 'white', marginTop: '5px', fontSize: '12px', fontWeight: 'bold' }}>
                                         {players[item.playerIndex]?.name || `P${item.playerIndex}`}
                                     </span>
                                 </div>
-                             );
+                            );
                         })}
                     </div>
 
-                    {/* Mao Indicator */}
-                    <div style={{ position: 'absolute', right: '10px', bottom: '10px', textAlign: 'right', color: 'white', background: 'rgba(0,0,0,0.3)', padding: '5px', borderRadius: '5px' }}>
-                        <div style={{ fontSize: '10px', textTransform: 'uppercase' }}>Mão</div>
+                    <div style={{ position: 'absolute', right: '10px', bottom: '10px', textAlign: 'right', color: 'white', background: 'rgba(0,0,0,0.5)', padding: '8px 12px', borderRadius: '8px', border: '2px solid rgba(255,255,255,0.2)' }}>
+                        <div style={{ fontSize: '10px', textTransform: 'uppercase', opacity: 0.7 }}>Mão</div>
                         <div style={{ fontSize: '14px', fontWeight: 'bold' }}>
                             {players[maoIndex]?.name || '...'}
                         </div>
                     </div>
                 </div>
 
-                {/* Bottom Hand (Player 1 or Human) */}
                 <div className="player-area bottom-player">
-                    <div className="player-name" style={{position: 'absolute', bottom: '10px', left: '10px', color: 'white', zIndex: 20}}>{bottomPlayer?.name}</div>
+                    <div className="player-name" style={{ position: 'absolute', bottom: '10px', left: '10px', color: 'white', zIndex: 20 }}>
+                        {bottomPlayer?.name}
+                    </div>
                     {bottomPlayer && (
                         <Hand
                             cards={bottomPlayer.hand}
                             position="bottom"
                             onCardClick={(i) => {
-                                // In online mode, I am bottom (myPlayerIndex), so activePlayerIdx must match myPlayerIndex
-                                const isMyTurn = (gameMode === 'online') ? (activePlayerIdx === myPlayerIndex) : (activePlayerIdx === 0);
-                                if (isMyTurn && waitingForInput && prompt?.includes("Choose card")) {
+                                if (isMyTurnBottom && waitingForInput && prompt?.includes("Choose card")) {
                                     handleInput(i.toString());
                                 }
                             }}
-                            disabled={!((gameMode === 'online' ? activePlayerIdx === myPlayerIndex : activePlayerIdx === 0) && waitingForInput && prompt?.includes("Choose card"))}
+                            disabled={!(isMyTurnBottom && waitingForInput && prompt?.includes("Choose card"))}
                         />
                     )}
                 </div>
             </div>
 
-            {/* Action Buttons */}
             <div className="controls">
                 {waitingForInput && (
                     <div className="buttons" style={{ justifyContent: 'center', marginTop: '10px' }}>
-                        {/* Truco Button */}
                         {prompt?.includes("'t' for Truco") && (
                             <button className="truco-btn" onClick={() => handleInput('t')}>
-                                TRUCO!
+                                🔥 TRUCO!
                             </button>
                         )}
 
-                         {/* Fold Button */}
                         {prompt?.includes("'d' to Fold") && (
                             <button className="fold-btn" onClick={() => handleInput('d')}>
-                                Desistir (Fold)
+                                ❌ Desistir
                             </button>
                         )}
 
-                        {/* Truco Response Buttons */}
                         {prompt?.includes("yelled TRUCO") && (
                             <>
                                 <button className="truco-btn" onClick={() => handleInput('a')}>
-                                    ACEITAR
+                                    ✅ ACEITAR
                                 </button>
                                 <button className="fold-btn" onClick={() => handleInput('d')}>
-                                    CORRER (FOLD)
+                                    🏃 CORRER
                                 </button>
                             </>
                         )}
                     </div>
                 )}
             </div>
-            {/* Logs ... */}
-            <div className="log-container" style={{ marginTop: '20px', height: '100px' }}>
-                {logs.map((log, i) => (
+
+            <div className="log-container" style={{ marginTop: '20px', height: '120px' }}>
+                {logs.slice(-10).map((log, i) => (
                     <div key={i}>{log}</div>
                 ))}
                 <div ref={logEndRef} />

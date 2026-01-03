@@ -6,7 +6,6 @@ import { Player } from './lib/Player';
 import { PlayerType } from './lib/types';
 import { IInputHandler, ILogger } from './lib/IO';
 
-// We need a Logger and InputHandler that wraps the Socket
 class SocketInputHandler implements IInputHandler {
     private socket: Socket;
     constructor(socket: Socket) {
@@ -28,7 +27,6 @@ class SocketInputHandler implements IInputHandler {
     }
 }
 
-// Broadcaster Logger to send logs to all in room
 class RoomLogger implements ILogger {
     private io: Server;
     private roomId: string;
@@ -38,7 +36,7 @@ class RoomLogger implements ILogger {
     }
     log(message: string) {
         this.io.to(this.roomId).emit('log', message);
-        this.io.to(this.roomId).emit('update-state'); // Trigger UI update
+        this.io.to(this.roomId).emit('update-state');
     }
 }
 
@@ -76,7 +74,6 @@ io.on('connection', (socket) => {
             socket.emit('log', `Joined room ${roomId}. Waiting for opponent...`);
 
             if (room.players.length === 2) {
-                // Start Game
                 const p1Data = room.players[0];
                 const p2Data = room.players[1];
 
@@ -97,7 +94,6 @@ io.on('connection', (socket) => {
                 room.game = game;
                 logger.log(`Game Starting! ${p1.name} vs ${p2.name}`);
 
-                // Notify players of their index
                 p1Data.socket.emit('game-start', { myIndex: 0 });
                 p2Data.socket.emit('game-start', { myIndex: 1 });
 
@@ -109,44 +105,38 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        // Find if user was in a room
         for (const [id, room] of rooms) {
             const playerIndex = room.players.findIndex(p => p.socket === socket);
             if (playerIndex !== -1) {
-                // Notify other player
                 const otherPlayer = room.players.find(p => p.socket !== socket);
                 if (otherPlayer) {
                     otherPlayer.socket.emit('log', 'Opponent disconnected. Game Over.');
                     otherPlayer.socket.emit('opponent-disconnected');
                 }
-                // Cleanup room
+
+                // Stop game if running
+                if (room.game) {
+                    room.game.stopMatch();
+                }
+
                 rooms.delete(id);
                 break;
             }
         }
     });
 
-    // Handle State Request from Client
     socket.on('request-state', () => {
-        // Find room
         for (const [id, room] of rooms) {
             if (room.players.some(p => p.socket === socket) && room.game) {
-                // Construct state
                 const players = room.game.getPlayers();
-
-                // Identify which player is requesting to verify "me" vs "opponent"
-                // But simplified: we send the full state, and client logic handles masking hands.
-                // NOTE: For security, we SHOULD mask opponent hand here.
-
                 const requesterIndex = room.players.findIndex(p => p.socket === socket);
-                // The game player order matches room.players order usually (p1, p2 added sequentially)
 
                 const state = {
-                    yourIndex: requesterIndex, // Send the player's index continuously
+                    yourIndex: requesterIndex,
+                    activePlayerIdx: room.game.getActivePlayerIndex(), // FIX: Enviar activePlayerIdx
                     players: players.map((p, idx) => ({
                         name: p.name,
-                        // Only show hand if it belongs to requester
-                        hand: idx === requesterIndex ? p.hand : p.hand.map(() => null), // Send nulls or empty for opponent
+                        hand: idx === requesterIndex ? p.hand : p.hand.map(() => null),
                         type: p.type
                     })),
                     tableCards: room.game.currentRoundCards,
@@ -164,5 +154,6 @@ io.on('connection', (socket) => {
 
 const PORT = 3001;
 httpServer.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`🚀 Truco Server running on port ${PORT}`);
+    console.log(`📡 Clients can connect to http://localhost:${PORT}`);
 });
