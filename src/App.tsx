@@ -107,6 +107,9 @@ function App() {
         });
 
         newSocket.on('state-update', (state: any) => {
+             if (typeof state.yourIndex === 'number') {
+                 setMyPlayerIndex(state.yourIndex);
+             }
              setPlayers(state.players);
              setTableCards(state.tableCards);
              setScore(state.score);
