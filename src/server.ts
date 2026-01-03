@@ -133,7 +133,7 @@ io.on('connection', (socket) => {
 
                 const state = {
                     yourIndex: requesterIndex,
-                    activePlayerIdx: room.game.getActivePlayerIndex(), // FIX: Enviar activePlayerIdx
+                    activePlayerIdx: room.game.getActivePlayerIndex(),
                     players: players.map((p, idx) => ({
                         name: p.name,
                         hand: idx === requesterIndex ? p.hand : p.hand.map(() => null),
