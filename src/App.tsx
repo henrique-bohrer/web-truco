@@ -117,6 +117,9 @@ function App() {
              setVira(state.vira);
              setTrucoVal(state.trucoVal);
              setMaoIndex(state.maoIndex);
+             if (typeof state.activePlayerIdx === 'number') {
+                 setActivePlayerIdx(state.activePlayerIdx);
+             }
         });
 
         setGameStarted(true);

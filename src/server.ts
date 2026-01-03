@@ -153,7 +153,8 @@ io.on('connection', (socket) => {
                     score: room.game.getScore(),
                     vira: room.game.getVira(),
                     trucoVal: room.game.getTrucoValue(),
-                    maoIndex: room.game.getMaoPlayerIndex()
+                    maoIndex: room.game.getMaoPlayerIndex(),
+                    activePlayerIdx: room.game.getActivePlayerIndex()
                 };
                 socket.emit('state-update', state);
                 break;
