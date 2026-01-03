@@ -7,10 +7,11 @@ import { PlayerType, Rank, ICard } from './lib/types';
 import { WebIO } from './lib/WebIO';
 import Card from './components/Card';
 import Hand from './components/Hand';
+import Tutorial from './components/Tutorial';
 
 function App() {
     const [gameStarted, setGameStarted] = useState(false);
-    const [gameMode, setGameMode] = useState<'bot' | 'local' | 'online'>('bot');
+    const [gameMode, setGameMode] = useState<'bot' | 'online' | 'tutorial'>('bot');
     const [roomId, setRoomId] = useState<string>('');
     const [nickname, setNickname] = useState<string>('');
     const [serverUrl, setServerUrl] = useState<string>('http://localhost:3001');
@@ -50,10 +51,12 @@ function App() {
         }
     };
 
-    const startGame = (mode: 'bot' | 'local' | 'online') => {
+    const startGame = (mode: 'bot' | 'online' | 'tutorial') => {
         setGameMode(mode);
         if (mode === 'online') {
             setIsOnline(true);
+        } else if (mode === 'tutorial') {
+            // Tutorial rendered conditionally
         } else {
             setGameStarted(true);
         }
@@ -147,7 +150,7 @@ function App() {
     };
 
     useEffect(() => {
-        if (gameStarted && !gameRef.current && gameMode !== 'online') {
+        if (gameStarted && !gameRef.current && gameMode === 'bot') {
             const onLog = (msg: string) => {
                 setLogs(prev => [...prev, msg]);
             };
@@ -165,17 +168,10 @@ function App() {
             const webIO = new WebIO(onLog, onAsk, onUpdate);
             const game = new MatchController(webIO, webIO);
 
-            if (gameMode === 'local') {
-                const p1 = new Player("Player 1", PlayerType.Human);
-                const p2 = new Player("Player 2", PlayerType.Human);
-                game.addPlayer(p1, webIO);
-                game.addPlayer(p2, webIO);
-            } else {
-                const human = new Player("Human", PlayerType.Human);
-                const bot = new Bot("Bot");
-                game.addPlayer(human, webIO);
-                game.addPlayer(bot);
-            }
+            const human = new Player("Human", PlayerType.Human);
+            const bot = new Bot("Bot");
+            game.addPlayer(human, webIO);
+            game.addPlayer(bot);
 
             gameRef.current = game;
             syncState();
@@ -358,13 +354,18 @@ function App() {
                 </div>
             );
         }
+
+        if (gameMode === 'tutorial') {
+            return <Tutorial onClose={() => setGameMode('bot')} />;
+        }
+
         return (
             <div className="game-container" style={{ textAlign: 'center', minHeight: '350px', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '20px' }}>
-                <h1 style={{ marginBottom: '40px', fontSize: '3rem' }}>🃏 Truco Paulista</h1>
-                <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', flexWrap: 'wrap', maxWidth: '600px', margin: '0 auto' }}>
-                    <button onClick={() => startGame('bot')} style={{ minWidth: '150px' }}>🤖 Play vs Bot</button>
-                    <button onClick={() => startGame('local')} style={{ minWidth: '150px' }}>👥 Local 2P</button>
-                    <button onClick={() => startGame('online')} style={{ minWidth: '150px' }}>🌐 Online (Alpha)</button>
+                <h1 style={{ marginBottom: '40px', fontSize: '4rem', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>🃏 Truco Paulista</h1>
+                <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', flexWrap: 'wrap', maxWidth: '800px', margin: '0 auto' }}>
+                    <button onClick={() => startGame('bot')} style={{ minWidth: '200px', fontSize: '1.2rem' }}>🤖 VS Computador</button>
+                    <button onClick={() => startGame('online')} style={{ minWidth: '200px', fontSize: '1.2rem' }}>🌐 Online Multiplayer</button>
+                    <button onClick={() => startGame('tutorial')} style={{ minWidth: '200px', fontSize: '1.2rem' }}>📖 Como Jogar</button>
                 </div>
             </div>
         );
@@ -401,12 +402,9 @@ function App() {
         }
     }
 
-    // FIX CRÍTICO: Condição corrigida para habilitar cliques
     const isMyTurnBottom = gameMode === 'online'
         ? activePlayerIdx === myPlayerIndex
         : activePlayerIdx === 0;
-
-    const isMyTurnTop = gameMode === 'local' && activePlayerIdx === 1;
 
     const canInteractBottom = gameMode === 'online'
         ? (waitingForInput && prompt?.includes("Choose card"))
@@ -423,7 +421,7 @@ function App() {
                 </div>
 
                 <div className="score-board" style={{ flexGrow: 1 }}>
-                    <h2>Truco Paulista {gameMode === 'bot' ? '(vs Bot)' : (gameMode === 'online' ? '(Online)' : '(Local)')}</h2>
+                    <h2>Truco Paulista {gameMode === 'bot' ? '(vs Bot)' : '(Online)'}</h2>
                     <div>{players[0]?.name}: {score[0]} | {players[1]?.name}: {score[1]}</div>
                     <div>Truco Value: {trucoVal}</div>
                 </div>
@@ -442,13 +440,8 @@ function App() {
                         <Hand
                             cards={topPlayer.hand}
                             position="top"
-                            hidden={gameMode !== 'local'}
-                            onCardClick={(i) => {
-                                if (isMyTurnTop && waitingForInput && prompt?.includes("Choose card")) {
-                                    handleInput(i.toString());
-                                }
-                            }}
-                            disabled={!(isMyTurnTop && waitingForInput)}
+                            hidden={true}
+                            disabled={true}
                         />
                     )}
                 </div>
