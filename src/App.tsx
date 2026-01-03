@@ -7,10 +7,11 @@ import { PlayerType, Rank, ICard } from './lib/types';
 import { WebIO } from './lib/WebIO';
 import Card from './components/Card';
 import Hand from './components/Hand';
+import Tutorial from './components/Tutorial';
 
 function App() {
     const [gameStarted, setGameStarted] = useState(false);
-    const [gameMode, setGameMode] = useState<'bot' | 'local' | 'online'>('bot');
+    const [gameMode, setGameMode] = useState<'bot' | 'local' | 'online' | 'tutorial'>('bot');
     const [roomId, setRoomId] = useState<string>('');
     const [nickname, setNickname] = useState<string>('');
     const [serverUrl, setServerUrl] = useState<string>('http://localhost:3001');
@@ -50,10 +51,12 @@ function App() {
         }
     };
 
-    const startGame = (mode: 'bot' | 'local' | 'online') => {
+    const startGame = (mode: 'bot' | 'local' | 'online' | 'tutorial') => {
         setGameMode(mode);
         if (mode === 'online') {
             setIsOnline(true);
+        } else if (mode === 'tutorial') {
+            setGameStarted(true);
         } else {
             setGameStarted(true);
         }
@@ -250,6 +253,10 @@ function App() {
         );
     }
 
+    if (gameStarted && gameMode === 'tutorial') {
+        return <Tutorial onBack={() => { setGameStarted(false); setGameMode('bot'); }} />;
+    }
+
     if (!gameStarted) {
         if (isOnline) {
             return (
@@ -365,6 +372,7 @@ function App() {
                     <button onClick={() => startGame('bot')} style={{ minWidth: '150px' }}>🤖 Play vs Bot</button>
                     <button onClick={() => startGame('local')} style={{ minWidth: '150px' }}>👥 Local 2P</button>
                     <button onClick={() => startGame('online')} style={{ minWidth: '150px' }}>🌐 Online (Alpha)</button>
+                    <button onClick={() => startGame('tutorial')} style={{ minWidth: '150px', background: '#e91e63' }}>📖 Tutorial</button>
                 </div>
             </div>
         );
