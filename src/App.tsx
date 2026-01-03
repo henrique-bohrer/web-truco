@@ -106,18 +106,18 @@ function App() {
         });
 
         newSocket.on('state-update', (state: any) => {
-             if (typeof state.yourIndex === 'number') {
-                 setMyPlayerIndex(state.yourIndex);
-             }
-             setPlayers(state.players);
-             setTableCards(state.tableCards);
-             setScore(state.score);
-             setVira(state.vira);
-             setTrucoVal(state.trucoVal);
-             setMaoIndex(state.maoIndex);
-             if (typeof state.activePlayerIdx === 'number') {
-                 setActivePlayerIdx(state.activePlayerIdx);
-             }
+            if (typeof state.yourIndex === 'number') {
+                setMyPlayerIndex(state.yourIndex);
+            }
+            if (typeof state.activePlayerIdx === 'number') {
+                setActivePlayerIdx(state.activePlayerIdx);
+            }
+            setPlayers(state.players);
+            setTableCards(state.tableCards);
+            setScore(state.score);
+            setVira(state.vira);
+            setTrucoVal(state.trucoVal);
+            setMaoIndex(state.maoIndex);
         });
 
         setGameStarted(true);
@@ -408,6 +408,10 @@ function App() {
 
     const isMyTurnTop = gameMode === 'local' && activePlayerIdx === 1;
 
+    const canInteractBottom = gameMode === 'online'
+        ? (waitingForInput && prompt?.includes("Choose card"))
+        : (isMyTurnBottom && waitingForInput && prompt?.includes("Choose card"));
+
     return (
         <div className="game-container">
             <div className="header">
@@ -484,11 +488,11 @@ function App() {
                             cards={bottomPlayer.hand}
                             position="bottom"
                             onCardClick={(i) => {
-                                if (isMyTurnBottom && waitingForInput && prompt?.includes("Choose card")) {
+                                if (canInteractBottom) {
                                     handleInput(i.toString());
                                 }
                             }}
-                            disabled={!(isMyTurnBottom && waitingForInput && prompt?.includes("Choose card"))}
+                            disabled={!canInteractBottom}
                         />
                     )}
                 </div>
