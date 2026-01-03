@@ -142,6 +142,7 @@ io.on('connection', (socket) => {
                 // The game player order matches room.players order usually (p1, p2 added sequentially)
 
                 const state = {
+                    yourIndex: requesterIndex, // Send the player's index continuously
                     players: players.map((p, idx) => ({
                         name: p.name,
                         // Only show hand if it belongs to requester
