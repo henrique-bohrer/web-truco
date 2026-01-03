@@ -408,6 +408,10 @@ function App() {
 
     const isMyTurnTop = gameMode === 'local' && activePlayerIdx === 1;
 
+    const canInteractBottom = gameMode === 'online'
+        ? (waitingForInput && prompt?.includes("Choose card"))
+        : (isMyTurnBottom && waitingForInput && prompt?.includes("Choose card"));
+
     return (
         <div className="game-container">
             <div className="header">
@@ -484,11 +488,11 @@ function App() {
                             cards={bottomPlayer.hand}
                             position="bottom"
                             onCardClick={(i) => {
-                                if (isMyTurnBottom && waitingForInput && prompt?.includes("Choose card")) {
+                                if (canInteractBottom) {
                                     handleInput(i.toString());
                                 }
                             }}
-                            disabled={!(isMyTurnBottom && waitingForInput && prompt?.includes("Choose card"))}
+                            disabled={!canInteractBottom}
                         />
                     )}
                 </div>
