@@ -30,6 +30,7 @@ function App() {
     const [maoIndex, setMaoIndex] = useState<number>(0);
     const [activePlayerIdx, setActivePlayerIdx] = useState<number>(0);
     const [myPlayerIndex, setMyPlayerIndex] = useState<number>(0); // Default to 0 (Host/P1)
+    const [, setUpdateTrigger] = useState(0);
 
     const resolveInputRef = useRef<((answer: string) => void) | null>(null);
     const gameRef = useRef<MatchController | null>(null);
