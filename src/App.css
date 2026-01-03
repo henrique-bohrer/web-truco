@@ -5,74 +5,78 @@ body {
     color: white;
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 50%, #388e3c 100%);
-    color: white;
-    min-height: 100vh;
-    overflow-y: auto;
     display: flex;
     justify-content: center;
-    align-items: center;
-    padding: 10px;
+    /* Allow scrolling */
+    min-height: 100vh;
+    overflow-y: auto;
 }
 
 .game-container {
     width: 100%;
-    max-width: 1200px;
-    min-height: 100vh; /* Fill screen on mobile */
-    /* Remove background overlay for cleaner look or keep it subtle */
+    /* Increase max-width for better desktop experience, effectively fluid but not too wide on ultra-wide screens */
+    max-width: 100%;
+    min-height: 100vh;
     background: transparent;
     padding: 10px;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    gap: 15px;
-    border: 2px solid rgba(255, 255, 255, 0.1);
 }
+
+/* Base styles for mobile-first */
+.card {
+    width: 80px;
+    height: 112px;
+}
+.card-corner { font-size: 16px; }
+.card-center { font-size: 40px; }
 
 @media (min-width: 600px) {
     body {
-        padding: 20px;
+        /* On desktop, remove body padding to allow full screen or center better */
+        padding: 0;
         align-items: center;
+        background: #1b5e20; /* Darker background outside the table */
     }
     .game-container {
-        /* On desktop, make it look like a card table surface or just centered app */
-        height: auto;
-        min-height: 700px;
-        max-width: 1000px; /* Constrain slightly so cards aren't too spread */
-        background: rgba(0,0,0,0.1); /* Subtle darkening container */
-        border-radius: 20px;
-        padding: 30px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        border: 1px solid rgba(255,255,255,0.1);
+        /* Define a distinct table area on desktop */
+        height: 90vh; /* Fixed height relative to viewport */
+        width: 95vw;
+        max-width: 1400px; /* Wider limit */
+
+        background: radial-gradient(circle at center, #388e3c 0%, #1b5e20 100%); /* Table green */
+        border-radius: 40px; /* Rounded table corners */
+        padding: 20px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+        border: 10px solid #5d4037; /* Wood border effect */
+
+        /* Centering */
+        margin: auto;
     }
 
     /* Enhance Card Size on Desktop */
     .card {
-        width: 110px;
-        height: 154px;
+        width: 100px;
+        height: 140px;
     }
     .card-center {
-        font-size: 60px;
+        font-size: 50px;
     }
     .card-corner {
-        font-size: 24px;
+        font-size: 20px;
     }
 }
 
-.vira-container {
+.header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
-    background: rgba(0,0,0,0.3);
-    padding: 15px;
-    border-radius: 10px;
-    backdrop-filter: blur(5px);
+    /* Remove background on desktop to blend with table? Or keep for readability */
+    background: rgba(0,0,0,0.2);
+    padding: 10px 20px;
+    border-radius: 20px;
 }
 
 .score-board {
@@ -106,8 +110,8 @@ body {
     overflow-y: auto;
     background: rgba(0,0,0,0.4);
     padding: 10px;
-    margin-top: auto; /* Push to bottom if space allows */
-    border-radius: 5px;
+    margin-top: auto;
+    border-radius: 10px;
     font-family: monospace;
     font-size: 0.9rem;
     border: 1px solid rgba(255,255,255,0.1);
@@ -115,30 +119,32 @@ body {
 
 .table-area {
     flex-grow: 1;
-    border: 3px dashed rgba(255,255,255,0.2);
-    border-radius: 20px;
-    margin: 20px 0;
+    /* Remove dashed border for cleaner look, or make it subtle */
+    border: 2px dashed rgba(255,255,255,0.1);
+    border-radius: 30px;
+    margin: 10px 0;
     display: flex;
     justify-content: center;
     align-items: center;
     gap: 30px;
     position: relative;
-    min-height: 200px; /* Ensure space for cards */
+    min-height: 200px;
 }
 
 .controls {
     display: flex;
     flex-direction: column;
     gap: 15px;
-    margin-top: 20px;
+    margin-top: 10px;
+    min-height: 60px; /* Reserve space for buttons */
 }
 
-.played-card {
+.buttons {
     display: flex;
     gap: 15px;
     flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
+    justify-content: center;
 }
 
 button {
@@ -182,13 +188,12 @@ button.fold-btn {
 
 /* Card Styles */
 .card {
-    width: 90px;
-    height: 126px;
     background-color: white;
     border-radius: 8px;
     box-shadow: -2px 2px 8px rgba(0,0,0,0.4);
     position: relative;
-    padding: 8px;
+    padding: 5px;
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -197,36 +202,7 @@ button.fold-btn {
     cursor: pointer;
     transition: transform 0.2s, box-shadow 0.2s;
     flex-shrink: 0;
-    transform-origin: center bottom; /* For better fanning rotation */
-}
-
-/* Responsive Card Sizes - Mobile */
-@media (max-width: 600px) {
-    .card {
-        width: 80px;
-        height: 112px;
-    }
-    .card-corner {
-        font-size: 16px;
-    }
-    .card-center {
-        font-size: 40px;
-    }
-    .game-container {
-        padding: 5px;
-    }
-    .header {
-        padding: 10px;
-        flex-direction: column;
-        gap: 10px;
-    }
-    .vira-container {
-        flex-direction: row;
-        gap: 10px;
-    }
-    .score-board {
-        width: 100%;
-    }
+    transform-origin: center bottom; /* Key for fanning */
 }
 
 .game-board {
@@ -241,7 +217,6 @@ button.fold-btn {
 .player-area {
     position: relative;
     width: 100%;
-    /* Ensure hand container is centered */
     display: flex;
     justify-content: center;
 }
@@ -252,25 +227,46 @@ button.fold-btn {
     background: rgba(0,0,0,0.4);
     padding: 2px 8px;
     border-radius: 10px;
+    /* Move name badge slightly to not overlap cards */
+    z-index: 200; /* Ensure name is always on top */
+}
+
+/* Adjust Player Name Position */
+.top-player .player-name {
+    top: 50%;
+    left: 10px;
+    transform: translateY(-50%);
+}
+.bottom-player .player-name {
+    bottom: 20px;
+    left: 20px;
+    /* The user image has name on left, cards centered */
 }
 
 .hand-container {
     display: flex;
     justify-content: center;
-    height: 160px;
+    /* Increase height to accommodate lifted cards without clipping if needed */
+    height: 180px;
     position: relative;
     width: 100%;
     align-items: flex-end;
-    perspective: 1000px; /* Adds 3D depth to rotations if needed */
+    perspective: 1000px;
+    /* Ensure touches/clicks pass through empty space */
+    pointer-events: none;
+}
+
+/* But enable pointer events on children (cards) */
+.hand-container > * {
+    pointer-events: auto;
 }
 
 .hand-container.top {
     align-items: flex-start;
-    height: 160px;
 }
 
 .card:hover {
-    transform: translateY(-20px) scale(1.1) !important; /* Override inline styles on hover */
+    transform: translateY(-40px) scale(1.1) !important; /* Move up more distinctly on hover */
     box-shadow: 0 10px 20px rgba(0,0,0,0.6);
     z-index: 100 !important;
 }
@@ -282,21 +278,20 @@ button.fold-btn {
     display: flex;
     flex-direction: column;
     align-items: center;
-    line-height: 1;
-    font-size: 22px;
-    font-weight: 700;
+    line-height: 0.9;
+    font-weight: bold;
 }
 
 .card-corner.top-left {
     position: absolute;
-    top: 8px;
-    left: 8px;
+    top: 5px;
+    left: 5px;
 }
 
 .card-corner.bottom-right {
     position: absolute;
-    bottom: 8px;
-    right: 8px;
+    bottom: 5px;
+    right: 5px;
     transform: rotate(180deg);
 }
 
@@ -305,12 +300,10 @@ button.fold-btn {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 56px;
     line-height: 1;
-    opacity: 0.9;
 }
 
-/* Small Card */
+/* Small Card Variant */
 .card.card-small {
     width: 50px;
     height: 70px;
@@ -321,163 +314,45 @@ button.fold-btn {
 
 /* Card Back */
 .card-back {
-    background: linear-gradient(135deg, #1565c0 0%, #0d47a1 50%, #01579b 100%);
-    border: 3px solid #fff;
-    position: relative;
-    overflow: hidden;
-}
-
-.card-back::before {
-    content: '';
-    position: absolute;
-    inset: 0;
     background: repeating-linear-gradient(
         45deg,
-        transparent,
-        transparent 10px,
-        rgba(255, 255, 255, 0.1) 10px,
-        rgba(255, 255, 255, 0.1) 20px
+        #1565c0,
+        #1565c0 10px,
+        #0d47a1 10px,
+        #0d47a1 20px
     );
     border: 2px solid white;
-    /* Add a subtle logo or circle in middle if desired, but striped is classic */
 }
 
 .card-disabled {
     filter: grayscale(0.8) opacity(0.7);
     cursor: not-allowed;
-    transform: none;
-}
-
-button.truco-btn {
-    background: linear-gradient(135deg, #ff9800, #f57c00);
-    color: white;
-    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.4);
-}
-
-button.truco-btn:hover {
-    background: linear-gradient(135deg, #fb8c00, #ef6c00);
-    box-shadow: 0 6px 20px rgba(255, 152, 0, 0.6);
-}
-
-button.fold-btn {
-    background: linear-gradient(135deg, #f44336, #d32f2f);
-    color: white;
-    box-shadow: 0 4px 12px rgba(244, 67, 54, 0.4);
-}
-
-button.fold-btn:hover {
-    background: linear-gradient(135deg, #e53935, #c62828);
-    box-shadow: 0 6px 20px rgba(244, 67, 54, 0.6);
-}
-
-/* Log Container */
-.log-container {
-    height: 120px;
-    overflow-y: auto;
-    background: rgba(0, 0, 0, 0.5);
-    padding: 15px;
-    border-radius: 12px;
-    font-family: 'Courier New', monospace;
-    font-size: 13px;
-    line-height: 1.6;
-    box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.log-container::-webkit-scrollbar {
-    width: 8px;
-}
-
-.log-container::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 4px;
-}
-
-.log-container::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 4px;
-}
-
-.log-container::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.5);
-}
-
-.log-container > div {
-    margin: 3px 0;
-    color: #e0e0e0;
-}
-
-/* Input Fields */
-input[type="text"] {
-    padding: 12px 18px;
-    font-size: 16px;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    outline: none;
-    transition: all 0.3s ease;
-    backdrop-filter: blur(5px);
-}
-
-input[type="text"]::placeholder {
-    color: rgba(255, 255, 255, 0.5);
-}
-
-input[type="text"]:focus {
-    border-color: #ffd54f;
-    background: rgba(255, 255, 255, 0.15);
-    box-shadow: 0 0 0 4px rgba(255, 213, 79, 0.2);
 }
 
 /* Animations */
 @keyframes slideInFromBottom {
-    0% {
-        transform: translateY(200px) rotate(-10deg);
-        opacity: 0;
-    }
-    100% {
-        transform: translateY(0) rotate(0);
-        opacity: 1;
-    }
+    0% { transform: translateY(200px) rotate(-10deg); opacity: 0; }
+    100% { transform: translateY(0) rotate(0); opacity: 1; }
 }
 
 @keyframes slideInFromTop {
-    0% {
-        transform: translateY(-200px) rotate(10deg);
-        opacity: 0;
-    }
-    100% {
-        transform: translateY(0) rotate(0);
-        opacity: 1;
-    }
+    0% { transform: translateY(-200px) rotate(10deg); opacity: 0; }
+    100% { transform: translateY(0) rotate(0); opacity: 1; }
 }
 
 @keyframes slideInFromLeft {
-    0% {
-        transform: translateX(-200px);
-        opacity: 0;
-    }
-    100% {
-        transform: translateX(0);
-        opacity: 1;
-    }
+    0% { transform: translateX(-200px); opacity: 0; }
+    100% { transform: translateX(0); opacity: 1; }
 }
 
 @keyframes slideInFromRight {
-    0% {
-        transform: translateX(200px);
-        opacity: 0;
-    }
-    100% {
-        transform: translateX(0);
-        opacity: 1;
-    }
+    0% { transform: translateX(200px); opacity: 0; }
+    100% { transform: translateX(0); opacity: 1; }
 }
 
 .played-card {
     animation-duration: 0.4s;
-    animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); /* Dramatic Pop */
+    animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
     animation-fill-mode: both;
 }
 
