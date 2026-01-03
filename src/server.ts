@@ -133,7 +133,7 @@ io.on('connection', (socket) => {
 
                 const state = {
                     yourIndex: requesterIndex,
-                    activePlayerIdx: room.game.getActivePlayerIndex(), // FIX: Enviar activePlayerIdx
+                    activePlayerIdx: room.game.getActivePlayerIndex(), // Mantenha apenas esta
                     players: players.map((p, idx) => ({
                         name: p.name,
                         hand: idx === requesterIndex ? p.hand : p.hand.map(() => null),
@@ -143,16 +143,16 @@ io.on('connection', (socket) => {
                     score: room.game.getScore(),
                     vira: room.game.getVira(),
                     trucoVal: room.game.getTrucoValue(),
-                    maoIndex: room.game.getMaoPlayerIndex(),
-                    activePlayerIdx: room.game.getActivePlayerIndex()
+                    maoIndex: room.game.getMaoPlayerIndex()
+                    // A segunda definição de 'activePlayerIdx' foi removida aqui
                 };
                 socket.emit('state-update', state);
                 break;
             }
         }
     });
-});
 
+});
 const PORT = 3001;
 httpServer.listen(PORT, () => {
     console.log(`🚀 Truco Server running on port ${PORT}`);
