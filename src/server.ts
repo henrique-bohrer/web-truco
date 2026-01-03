@@ -131,21 +131,20 @@ io.on('connection', (socket) => {
                 const players = room.game.getPlayers();
                 const requesterIndex = room.players.findIndex(p => p.socket === socket);
 
-                const state = {
-                    yourIndex: requesterIndex,
-                    activePlayerIdx: room.game.getActivePlayerIndex(),
-                    players: players.map((p, idx) => ({
-                        name: p.name,
-                        hand: idx === requesterIndex ? p.hand : p.hand.map(() => null),
-                        type: p.type
-                    })),
-                    tableCards: room.game.currentRoundCards,
-                    score: room.game.getScore(),
-                    vira: room.game.getVira(),
-                    trucoVal: room.game.getTrucoValue(),
-                    maoIndex: room.game.getMaoPlayerIndex(),
-                    activePlayerIdx: room.game.getActivePlayerIndex()
-                };
+                const state: any = {};
+                state.yourIndex = requesterIndex;
+                state.activePlayerIdx = room.game.getActivePlayerIndex();
+                state.players = players.map((p, idx) => ({
+                    name: p.name,
+                    hand: idx === requesterIndex ? p.hand : p.hand.map(() => null),
+                    type: p.type
+                }));
+                state.tableCards = room.game.currentRoundCards;
+                state.score = room.game.getScore();
+                state.vira = room.game.getVira();
+                state.trucoVal = room.game.getTrucoValue();
+                state.maoIndex = room.game.getMaoPlayerIndex();
+
                 socket.emit('state-update', state);
                 break;
             }
