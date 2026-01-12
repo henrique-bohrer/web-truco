@@ -54,8 +54,8 @@ const Tutorial: React.FC<TutorialProps> = ({ onBack }) => {
                         No início de cada Mão, uma carta é virada na mesa: o <strong>Vira</strong>.
                     </p>
                     <div style={{ transform: 'scale(0.8)', margin: '10px 0' }}>
-                         <div style={{fontWeight: 'bold'}}>Vira (Exemplo)</div>
-                         <Card card={{ rank: Rank.Seven, suit: Suit.Diamonds } as any} />
+                        <div style={{ fontWeight: 'bold' }}>Vira (Exemplo)</div>
+                        <Card card={{ rank: Rank.Seven, suit: Suit.Diamonds } as any} />
                     </div>
                     <p>
                         As <strong>Manilhas</strong> são as cartas imediatamente acima do Vira.
@@ -79,7 +79,7 @@ const Tutorial: React.FC<TutorialProps> = ({ onBack }) => {
                         <div style={{ textAlign: 'center' }}>
                             <div style={{ fontSize: '2rem', color: '#ff4444' }}>♦️</div>
                             <small>Pica-fumo</small>
-                            <br/>(Mais Fraca)
+                            <br />(Mais Fraca)
                         </div>
                         <div>{'<'}</div>
                         <div style={{ textAlign: 'center' }}>
@@ -95,7 +95,7 @@ const Tutorial: React.FC<TutorialProps> = ({ onBack }) => {
                         <div style={{ textAlign: 'center' }}>
                             <div style={{ fontSize: '2rem' }}>♣️</div>
                             <small>Zap</small>
-                            <br/>(<strong>Mais Forte!</strong>)
+                            <br />(<strong>Mais Forte!</strong>)
                         </div>
                     </div>
                 </div>

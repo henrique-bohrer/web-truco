@@ -109,18 +109,18 @@ function App() {
         });
 
         newSocket.on('state-update', (state: any) => {
-             if (typeof state.yourIndex === 'number') {
-                 setMyPlayerIndex(state.yourIndex);
-             }
-             setPlayers(state.players);
-             setTableCards(state.tableCards);
-             setScore(state.score);
-             setVira(state.vira);
-             setTrucoVal(state.trucoVal);
-             setMaoIndex(state.maoIndex);
-             if (typeof state.activePlayerIdx === 'number') {
-                 setActivePlayerIdx(state.activePlayerIdx);
-             }
+            if (typeof state.yourIndex === 'number') {
+                setMyPlayerIndex(state.yourIndex);
+            }
+            if (typeof state.activePlayerIdx === 'number') {
+                setActivePlayerIdx(state.activePlayerIdx);
+            }
+            setPlayers(state.players);
+            setTableCards(state.tableCards);
+            setScore(state.score);
+            setVira(state.vira);
+            setTrucoVal(state.trucoVal);
+            setMaoIndex(state.maoIndex);
         });
 
         setGameStarted(true);
@@ -150,7 +150,7 @@ function App() {
     };
 
     useEffect(() => {
-        if (gameStarted && !gameRef.current && gameMode !== 'online') {
+        if (gameStarted && !gameRef.current && gameMode === 'bot') {
             const onLog = (msg: string) => {
                 setLogs(prev => [...prev, msg]);
             };
@@ -168,17 +168,10 @@ function App() {
             const webIO = new WebIO(onLog, onAsk, onUpdate);
             const game = new MatchController(webIO, webIO);
 
-            if (gameMode === 'local') {
-                const p1 = new Player("Player 1", PlayerType.Human);
-                const p2 = new Player("Player 2", PlayerType.Human);
-                game.addPlayer(p1, webIO);
-                game.addPlayer(p2, webIO);
-            } else {
-                const human = new Player("Human", PlayerType.Human);
-                const bot = new Bot("Bot");
-                game.addPlayer(human, webIO);
-                game.addPlayer(bot);
-            }
+            const human = new Player("Human", PlayerType.Human);
+            const bot = new Bot("Bot");
+            game.addPlayer(human, webIO);
+            game.addPlayer(bot);
 
             gameRef.current = game;
             syncState();
@@ -365,6 +358,11 @@ function App() {
                 </div>
             );
         }
+
+        if (gameMode === 'tutorial') {
+            return <Tutorial onBack={() => setGameMode('bot')} />;
+        }
+
         return (
             <div className="game-container" style={{ textAlign: 'center', minHeight: '350px', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '20px' }}>
                 <h1 style={{ marginBottom: '40px', fontSize: '3rem' }}>🃏 Truco Paulista</h1>
@@ -409,12 +407,13 @@ function App() {
         }
     }
 
-    // FIX CRÍTICO: Condição corrigida para habilitar cliques
     const isMyTurnBottom = gameMode === 'online'
         ? activePlayerIdx === myPlayerIndex
         : activePlayerIdx === 0;
 
-    const isMyTurnTop = gameMode === 'local' && activePlayerIdx === 1;
+    const canInteractBottom = gameMode === 'online'
+        ? (waitingForInput && prompt?.includes("Choose card"))
+        : (isMyTurnBottom && waitingForInput && prompt?.includes("Choose card"));
 
     return (
         <div className="game-container">
@@ -427,7 +426,7 @@ function App() {
                 </div>
 
                 <div className="score-board" style={{ flexGrow: 1 }}>
-                    <h2>Truco Paulista {gameMode === 'bot' ? '(vs Bot)' : (gameMode === 'online' ? '(Online)' : '(Local)')}</h2>
+                    <h2>Truco Paulista {gameMode === 'bot' ? '(vs Bot)' : '(Online)'}</h2>
                     <div>{players[0]?.name}: {score[0]} | {players[1]?.name}: {score[1]}</div>
                     <div>Truco Value: {trucoVal}</div>
                 </div>
@@ -446,13 +445,8 @@ function App() {
                         <Hand
                             cards={topPlayer.hand}
                             position="top"
-                            hidden={gameMode !== 'local'}
-                            onCardClick={(i) => {
-                                if (isMyTurnTop && waitingForInput && prompt?.includes("Choose card")) {
-                                    handleInput(i.toString());
-                                }
-                            }}
-                            disabled={!(isMyTurnTop && waitingForInput)}
+                            hidden={true}
+                            disabled={true}
                         />
                     )}
                 </div>
@@ -492,11 +486,11 @@ function App() {
                             cards={bottomPlayer.hand}
                             position="bottom"
                             onCardClick={(i) => {
-                                if (isMyTurnBottom && waitingForInput && prompt?.includes("Choose card")) {
+                                if (canInteractBottom) {
                                     handleInput(i.toString());
                                 }
                             }}
-                            disabled={!(isMyTurnBottom && waitingForInput && prompt?.includes("Choose card"))}
+                            disabled={!canInteractBottom}
                         />
                     )}
                 </div>
