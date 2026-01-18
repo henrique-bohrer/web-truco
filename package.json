@@ -7,7 +7,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "concurrently -k \"npm run start:server\" \"vite\"",
     "build": "vite build",
+    "build:server": "tsc -p tsconfig.server.json",
     "preview": "vite preview",
+    "start": "node dist-server/server.js",
     "start:server": "ts-node --compiler-options \"{\\\"module\\\":\\\"commonjs\\\"}\" src/server.ts"
   },
   "repository": {

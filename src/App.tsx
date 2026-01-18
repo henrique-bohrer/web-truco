@@ -14,7 +14,7 @@ function App() {
     const [gameMode, setGameMode] = useState<'bot' | 'local' | 'online' | 'tutorial'>('bot');
     const [roomId, setRoomId] = useState<string>('');
     const [nickname, setNickname] = useState<string>('');
-    const [serverUrl, setServerUrl] = useState<string>('http://localhost:3001');
+    const [serverUrl, setServerUrl] = useState<string>(import.meta.env.VITE_SERVER_URL || 'http://localhost:3001');
     const [isOnline, setIsOnline] = useState(false);
     const [connectionError, setConnectionError] = useState<string | null>(null);
 
